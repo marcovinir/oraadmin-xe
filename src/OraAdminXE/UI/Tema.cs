@@ -32,6 +32,24 @@ public static class Tema
     public static readonly Font FuenteCodigo     = new("Cascadia Mono", 10f);
     public static readonly Font FuenteIconos     = new("Segoe MDL2 Assets", 12f);
 
+    /// <summary>Botón estándar de barra de acciones. <paramref name="primario"/> = relleno con el color de acento.</summary>
+    public static Button Boton(string texto, bool primario = false)
+    {
+        var b = new Button
+        {
+            Text = texto, AutoSize = true, MinimumSize = new Size(0, 36), Padding = new Padding(8, 0, 8, 0),
+            Margin = new Padding(0, 4, 8, 4), Cursor = Cursors.Hand
+        };
+        if (primario)
+        {
+            b.BackColor = Acento;
+            b.ForeColor = Color.White;
+            b.FlatStyle = FlatStyle.Flat;
+            b.FlatAppearance.BorderSize = 0;
+        }
+        return b;
+    }
+
     /// <summary>Estilo estándar para todas las grillas de resultados.</summary>
     public static void AplicarGrilla(DataGridView grilla)
     {
@@ -50,6 +68,7 @@ public static class Tema
         grilla.ColumnHeadersDefaultCellStyle.SelectionBackColor = Fondo;
         grilla.ColumnHeadersDefaultCellStyle.SelectionForeColor = Texto;
         grilla.ColumnHeadersDefaultCellStyle.Padding = new Padding(4, 0, 0, 0);
+        grilla.ColumnHeadersDefaultCellStyle.WrapMode = DataGridViewTriState.False;
         grilla.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
         grilla.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
         grilla.ColumnHeadersHeight = 36;

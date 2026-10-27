@@ -24,15 +24,15 @@ public sealed class UcUsuarios : UserControl
         Padding = new Padding(16, 12, 16, 8);
         Font = Tema.Fuente;
 
-        _btnCrear = Boton("＋  Crear usuario", primario: true);
-        _btnClave = Boton("Contraseña…");
-        _btnCuota = Boton("Tablespace y cuota…");
-        _btnBloquear = Boton("Bloquear");
-        _btnDesbloquear = Boton("Desbloquear");
-        _btnExpirar = Boton("Expirar clave");
-        _btnEliminar = Boton("Eliminar");
+        _btnCrear = Tema.Boton("＋  Crear usuario", primario: true);
+        _btnClave = Tema.Boton("Contraseña…");
+        _btnCuota = Tema.Boton("Tablespace y cuota…");
+        _btnBloquear = Tema.Boton("Bloquear");
+        _btnDesbloquear = Tema.Boton("Desbloquear");
+        _btnExpirar = Tema.Boton("Expirar clave");
+        _btnEliminar = Tema.Boton("Eliminar");
         _btnEliminar.ForeColor = Tema.Peligro;
-        _btnRefrescar = Boton("⟳  Refrescar");
+        _btnRefrescar = Tema.Boton("⟳  Refrescar");
 
         var izquierda = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false };
         izquierda.Controls.AddRange([_btnCrear, _btnClave, _btnCuota, _btnBloquear, _btnDesbloquear, _btnExpirar]);
@@ -219,22 +219,5 @@ public sealed class UcUsuarios : UserControl
         {
             await CargarAsync(seleccionar);
         }
-    }
-
-    private static Button Boton(string texto, bool primario = false)
-    {
-        var b = new Button
-        {
-            Text = texto, AutoSize = true, MinimumSize = new Size(0, 36), Padding = new Padding(8, 0, 8, 0),
-            Margin = new Padding(0, 4, 8, 4), Cursor = Cursors.Hand
-        };
-        if (primario)
-        {
-            b.BackColor = Tema.Acento;
-            b.ForeColor = Color.White;
-            b.FlatStyle = FlatStyle.Flat;
-            b.FlatAppearance.BorderSize = 0;
-        }
-        return b;
     }
 }
