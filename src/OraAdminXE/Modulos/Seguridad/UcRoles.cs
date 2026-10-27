@@ -156,9 +156,9 @@ public sealed class UcRoles : UserControl
 
     private async Task CargarPrivilegiosAsync()
     {
-        if (Actual is not { } b) { _grdPrivilegios.DataSource = null; ActualizarBotones(); return; }
         try
         {
+            if (Actual is not { } b) { _grdPrivilegios.DataSource = null; ActualizarBotones(); return; }
             _grdPrivilegios.DataSource = await Bd.ConsultarAsync(SqlSeguridad.PrivilegiosDe, Parametro.De("g", b.Nombre));
             Encabezados(_grdPrivilegios, new()
             {
