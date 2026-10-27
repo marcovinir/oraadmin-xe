@@ -158,6 +158,7 @@ La app es **oscura**: fondo `#0E1016`, menú `#0A0B10`, superficies `#14161F` y 
 - **Nombres de job únicos.** Usar `EXP_<TIPO>_<yyyyMMdd_HHmmss>`. Si un job falla, puede quedar su tabla maestra. `DBA_DATAPUMP_JOBS` con estado `NOT RUNNING` se limpia con `DROP TABLE ADMIN_BD.<job> PURGE`.
 - **`PASSWORD_VERIFY_FUNCTION ora12c_verify_function`** falla si antes no se corrió `utlpwdmg.sql` en la PDB. Para la demo no se usa.
 - **`ALTER SYSTEM KILL SESSION`** necesita `'sid,serial#'`. No se debe matar la propia sesión de la app (`SYS_CONTEXT('USERENV','SID')`).
+- **Eventos `async` (botones, `SelectionChanged`…): todo el cuerpo va dentro de `try`/`catch` con `Dialogos.Error`.** Si una excepción se escapa, `ManejadorErrores` (instalado en `Program.cs`) la muestra en vez de cerrar la app, pero es solo una red de seguridad. Además, **no se carga una grilla desde el `SelectionChanged` de otra mientras esta se está llenando**: se usa una bandera `_cargando` y `BeginInvoke(...)` (caso real de Perfiles, PR #46).
 - **`new OracleParameter("x", 0)` no pasa el valor 0:** C# convierte el literal `0` a `OracleDbType` y llama al constructor equivocado (`ArgumentOutOfRangeException`). Usar siempre **`Parametro.De("x", valor)`**.
 - **Dentro de la PDB, `V$SYSMETRIC` viene vacía.** Para las métricas de Performance se usa `V$CON_SYSMETRIC` (`group_id = 18`).
 - **Para la demo de tuning no se usa `COUNT(*)`**, porque Oracle lo resuelve con el índice de la PK. Hay que consultar columnas de la tabla (`SELECT *` o `SUM(cantidad)`).
