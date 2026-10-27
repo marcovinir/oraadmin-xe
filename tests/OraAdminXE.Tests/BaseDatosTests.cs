@@ -122,3 +122,13 @@ public class BaseDatosTests : IAsyncLifetime
         Assert.Contains("A-Rows", plan);
     }
 }
+
+public class ParametroTests
+{
+    [Fact]
+    public void De_pasa_el_cero_como_valor_y_null_como_DBNull()
+    {
+        Assert.Equal(0, Parametro.De("x", 0).Value);
+        Assert.True(Parametro.De("x", null).Value is null or DBNull);
+    }
+}

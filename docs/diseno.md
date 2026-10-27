@@ -138,6 +138,7 @@ public partial class UcTablespaces : ModuloBase
 - **Nombres de job únicos.** Usar `EXP_<TIPO>_<yyyyMMdd_HHmmss>`. Si un job falla, puede quedar su tabla maestra. `DBA_DATAPUMP_JOBS` con estado `NOT RUNNING` se limpia con `DROP TABLE ADMIN_BD.<job> PURGE`.
 - **`PASSWORD_VERIFY_FUNCTION ora12c_verify_function`** falla si antes no se corrió `utlpwdmg.sql` en la PDB. Para la demo no se usa.
 - **`ALTER SYSTEM KILL SESSION`** necesita `'sid,serial#'`. No se debe matar la propia sesión de la app (`SYS_CONTEXT('USERENV','SID')`).
+- **`new OracleParameter("x", 0)` no pasa el valor 0:** C# convierte el literal `0` a `OracleDbType` y llama al constructor equivocado (`ArgumentOutOfRangeException`). Usar siempre **`Parametro.De("x", valor)`**.
 - **Dentro de la PDB, `V$SYSMETRIC` viene vacía.** Para las métricas de Performance se usa `V$CON_SYSMETRIC` (`group_id = 18`).
 - **Para la demo de tuning no se usa `COUNT(*)`**, porque Oracle lo resuelve con el índice de la PK. Hay que consultar columnas de la tabla (`SELECT *` o `SUM(cantidad)`).
 - **Límites de XE:** 2 hilos de CPU, 2 GB de RAM y 12 GB de datos de usuario. El respaldo **full** de la PDB tarda un par de minutos y genera cientos de MB.
