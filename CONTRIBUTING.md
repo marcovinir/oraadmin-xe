@@ -1,21 +1,21 @@
 # Cómo trabajamos
 
-Somos 4 personas tocando la misma solución durante una semana. Estas reglas existen para que **nadie pise el trabajo de otro** y para que `main` siempre compile.
+Somos 4 personas tocando la misma solución durante una semana. Estas reglas existen para que **nadie pise el trabajo de otro** y para que `develop` siempre compile.
 
 ## Reglas del equipo
 
 1. **Primero SQL Developer, después la app.** Nadie programa una pantalla sin haber probado antes sus consultas como `ADMIN_BD@XEPDB1`. Las consultas base están en [`docs/referencia-sql.md`](docs/referencia-sql.md).
 2. **Toda llamada a Oracle pasa por `Bd`** (`IBaseDatos`). Así la bitácora, los errores ORA y la conexión funcionan igual en todo lado. No se crean `OracleConnection` sueltas.
 3. **Cada quien trabaja en su carpeta**: `src/OraAdminXE/Modulos/<SuMódulo>/`. Si hace falta tocar algo compartido (`Datos/`, `UI/`, el `.csproj`), se avisa en el grupo y se hace en un PR aparte y pequeño.
-4. **Cada Pull Request lo revisa otra persona** antes de unirlo a `main`.
+4. **Cada Pull Request lo revisa otra persona** antes de unirlo a `develop`.
 5. **Cada quien escribe la sección del manual de sus módulos** y entrega 1 o 2 capturas.
 6. **Nunca se suben** `.dmp`, `.log`, `conexion.json` ni contraseñas.
 
 ## Flujo diario
 
 ```bash
-git checkout main
-git pull origin main
+git checkout develop
+git pull origin develop
 git checkout -b feature/respaldos      # una rama por issue o por módulo
 # ... trabajar, probar con F5 ...
 git add src/OraAdminXE/Modulos/Respaldos
@@ -24,13 +24,14 @@ git push -u origin feature/respaldos
 gh pr create --fill                    # o desde la web de GitHub
 ```
 
-Cuando el PR se une, se borra la rama y se cierra la issue (`Closes #11` en la descripción del PR la cierra sola).
+Los PR van **hacia `develop`** (es la rama por defecto, GitHub la propone sola). Cuando el PR se une, se borra la rama y se cierra la issue (`Closes #11` en la descripción del PR la cierra sola).
 
 ### Ramas
 
 | Rama | Para qué |
 |---|---|
-| `main` | Siempre compila y corre. Solo entra código por PR |
+| `main` | **Versión final.** No se toca durante la semana: al terminar se une `develop` → `main` y se etiqueta `v1.0` (issue #27) |
+| `develop` | **Integración** (rama por defecto). Aquí se unen todos los PR. Siempre compila y corre |
 | `feature/<módulo>-<algo>` | Trabajo de una issue: `feature/nucleo-datos`, `feature/respaldos`, `feature/tuning-planes` |
 | `fix/<algo>` | Corrección de un error: `fix/login-ora12514` |
 | `docs/<algo>` | Manual, capturas, README |
@@ -49,7 +50,7 @@ Manual: sección de respaldos y recuperación (#26)
 
 - Deben ser **pequeños** (una issue) y llevar una captura si cambian una pantalla.
 - Hay que llenar la plantilla, que incluye una lista de verificación.
-- **Antes de pedir revisión:** `main` actualizado y fusionado en la rama, compila sin errores y se probó con F5 contra Oracle.
+- **Antes de pedir revisión:** `develop` actualizado y fusionado en la rama (`git merge origin/develop`), compila sin errores y se probó con F5 contra Oracle.
 
 ## Pruebas
 
