@@ -17,7 +17,7 @@ Es una historia de **~15 minutos** en la que cada módulo hace algo visible. Hay
 |:-:|---|---|---|:-:|
 | 1 | P1 | Login → Inicio | Login con `ADMIN_BD` sobre `XEPDB1` (y un intento con un usuario sin DBA, que se rechaza). Dashboard: instancia, sesiones, semáforo de tablespaces | 1 min |
 | 2 | P3 | Tablespaces | Crear `TS_VENTAS` (50 MB, autoextend), agregarle un datafile, ver el % usado y ponerlo READ ONLY y luego READ WRITE. Botón **Ver SQL** | 1,5 min |
-| 3 | P1 | Seguridad | Crear el perfil `PERFIL_DEMO` (3 intentos y 1 minuto de bloqueo), el usuario `JUAN` con ese perfil y cuota en `TS_VENTAS`, y el rol `ROL_CONSULTA` (`SELECT` sobre `FACTURA`) asignado a `JUAN` | 2 min |
+| 3 | P2 → P1 | Seguridad | Crear el perfil `PERFIL_DEMO` (3 intentos y 1 minuto de bloqueo), el usuario `JUAN` con ese perfil y cuota en `TS_VENTAS`, y el rol `ROL_CONSULTA` (`SELECT` sobre `FACTURA`) asignado a `JUAN` | 2 min |
 | 4 | P3 | Auditoría | Activar `ORA_LOGON_FAILURES` y crear y activar `POL_DEMO_DML` sobre `DEMO_VENTAS.FACTURA`. Fallar 3 veces el login de `JUAN` → en Seguridad aparece `LOCKED(TIMED)` → en la pista de auditoría se ven los intentos → desbloquearlo | 2 min |
 | 5 | P4 | Tuning | `SELECT * FROM demo_ventas.detalle_factura WHERE id_producto = 25` → plan con **TABLE ACCESS FULL (costo 173)** → crear índice y recolectar estadísticas → **INDEX RANGE SCAN (costo 107)**, lado a lado | 2 min |
 | 6 | P4 | Performance | Gráfico en vivo. En SQL Developer, la sesión A hace `UPDATE demo_ventas.cliente SET nombre = nombre WHERE id_cliente = 1` sin COMMIT y la B hace lo mismo y se queda esperando. La app muestra quién bloquea a quién → **matar la sesión A** → la B continúa | 2 min |
