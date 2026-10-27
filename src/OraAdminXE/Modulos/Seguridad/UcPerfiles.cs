@@ -21,6 +21,9 @@ public sealed class UcPerfiles : UserControl
     private readonly BotonPlano _btnAsignar = Tema.Boton("Asignar a usuario…", icono: "");
     private readonly BotonPlano _btnRefrescar = Tema.Boton("Refrescar", icono: "");
 
+    private bool _cargando;
+    private int _version;
+
     private static IBaseDatos Bd => Sesion.Bd;
 
     public UcPerfiles()
@@ -63,7 +66,13 @@ public sealed class UcPerfiles : UserControl
         Tema.MensajeVacio(_grdPerfiles, "No hay perfiles.", "");
         Tema.MensajeVacio(_grdLimites, "Elija un perfil para ver sus límites.", "");
         _grdPerfiles.CellFormatting += GrdPerfiles_CellFormatting;
-        _grdPerfiles.SelectionChanged += async (_, _) => await CargarLimitesAsync();
+        // Mientras se llena la grilla, SelectionChanged salta varias veces seguidas: se ignora y la carga
+        // se difiere con BeginInvoke para que corra cuando la grilla termine su layout (modo Fill).
+        _grdPerfiles.SelectionChanged += (_, _) =>
+        {
+            if (_cargando || !IsHandleCreated) return;
+            BeginInvoke(async () => await CargarLimitesAsync());
+        };
 
         Controls.Add(division);
         Controls.Add(_lblPie);
@@ -84,6 +93,7 @@ public sealed class UcPerfiles : UserControl
         if (string.IsNullOrEmpty(Bd.Usuario)) return;
         var anterior = seleccionar ?? Perfil;
         UseWaitCursor = true;
+        _cargando = true;
         try
         {
             var perfiles = await Bd.ConsultarAsync(SqlPerfiles.Perfiles);
@@ -109,6 +119,7 @@ public sealed class UcPerfiles : UserControl
         }
         finally
         {
+            _cargando = false;
             UseWaitCursor = false;
         }
         await CargarLimitesAsync();
@@ -116,16 +127,19 @@ public sealed class UcPerfiles : UserControl
 
     private async Task CargarLimitesAsync()
     {
-        ActualizarBotones();
-        if (Perfil is not { } perfil)
-        {
-            _grdLimites.DataSource = null;
-            _lblLimites.Text = "Límites";
-            return;
-        }
+        // Cada llamada invalida las anteriores: si otra empezó mientras esta consultaba, su resultado se descarta.
+        var version = ++_version;
         try
         {
+            ActualizarBotones();
+            if (Perfil is not { } perfil)
+            {
+                _grdLimites.DataSource = null;
+                _lblLimites.Text = "Límites";
+                return;
+            }
             var limites = await Bd.ConsultarAsync(SqlPerfiles.LimitesDe, Parametro.De("p", perfil));
+            if (version != _version) return;
             limites.Columns.Add("DESCRIPCION", typeof(string));
             limites.Columns.Add("VALOR", typeof(string));
             foreach (DataRow r in limites.Rows)
