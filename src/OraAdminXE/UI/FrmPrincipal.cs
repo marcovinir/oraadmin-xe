@@ -75,7 +75,8 @@ public sealed class FrmPrincipal : Form
         {
             var boton = new Button
             {
-                Text = $"   {entrada.Icono}   {entrada.Titulo}",
+                Text = entrada.Titulo,
+                Padding = new Padding(52, 0, 0, 0),
                 Dock = DockStyle.Top,
                 Height = 44,
                 FlatStyle = FlatStyle.Flat,
@@ -88,6 +89,9 @@ public sealed class FrmPrincipal : Form
             };
             boton.FlatAppearance.BorderSize = 0;
             boton.FlatAppearance.MouseOverBackColor = Tema.MenuHover;
+            // WinForms no dibuja emojis: el ícono se pinta aparte con la fuente de íconos de Windows.
+            boton.Paint += (_, e) => TextRenderer.DrawText(e.Graphics, entrada.Icono, Tema.FuenteIconos,
+                new Rectangle(18, 0, 24, boton.Height), boton.ForeColor, TextFormatFlags.VerticalCenter | TextFormatFlags.HorizontalCenter);
             boton.Click += async (_, _) => await AbrirAsync(entrada, boton);
             _menu.Controls.Add(boton);
         }

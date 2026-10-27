@@ -12,7 +12,7 @@ using OraAdminXE.UI;
 
 namespace OraAdminXE.Modulos;
 
-/// <summary>Una opción del menú lateral.</summary>
+/// <summary>Una opción del menú lateral. <paramref name="Icono"/> es un glifo de la fuente Segoe MDL2 Assets.</summary>
 public sealed record EntradaModulo(string Icono, string Titulo, Func<ModuloBase> Crear);
 
 /// <summary>
@@ -23,15 +23,15 @@ public static class RegistroModulos
 {
     public static readonly IReadOnlyList<EntradaModulo> Todos =
     [
-        new("⌂",  "Inicio",               () => new UcDashboard()),
-        new("▤",  "Tablespaces",          () => new UcTablespaces()),
-        new("⚡", "Tuning",               () => new UcTuning()),
-        new("📈", "Performance",          () => new UcPerformance()),
-        new("🔍", "Auditoría",            () => new UcAuditoria()),
-        new("🔒", "Seguridad",            () => new UcSeguridad()),
-        new("💾", "Respaldos",            () => new UcRespaldos()),
-        new("↺",  "Recuperación",         () => new UcRecuperacion()),
-        new("📁", "Directorios y archivos", () => new UcDirectorios()),
-        new("📜", "Bitácora",             () => new UcBitacora()),
+        new("\uE80F", "Inicio",                 () => new UcDashboard()),
+        new("\uEDA2", "Tablespaces",            () => new UcTablespaces()),
+        new("\uE945", "Tuning",                 () => new UcTuning()),
+        new("\uE9D9", "Performance",            () => new UcPerformance()),
+        new("\uE890", "Auditoría",              () => new UcAuditoria()),
+        new("\uE72E", "Seguridad",              () => new UcSeguridad()),
+        new("\uE74E", "Respaldos",              () => new UcRespaldos()),
+        new("\uE81C", "Recuperación",           () => new UcRecuperacion()),
+        new("\uE8B7", "Directorios y archivos", () => new UcDirectorios()),
+        new("\uEA37", "Bitácora",               () => new UcBitacora()),
     ];
 }

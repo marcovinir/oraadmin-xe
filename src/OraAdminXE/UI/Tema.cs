@@ -30,6 +30,7 @@ public static class Tema
     public static readonly Font FuenteSubtitulo  = new("Segoe UI", 10f, FontStyle.Italic);
     public static readonly Font FuenteMenu       = new("Segoe UI", 10.5f);
     public static readonly Font FuenteCodigo     = new("Cascadia Mono", 10f);
+    public static readonly Font FuenteIconos     = new("Segoe MDL2 Assets", 12f);
 
     /// <summary>Estilo estándar para todas las grillas de resultados.</summary>
     public static void AplicarGrilla(DataGridView grilla)

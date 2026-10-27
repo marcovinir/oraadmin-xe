@@ -10,6 +10,19 @@ namespace OraAdminXE.UI;
 /// </summary>
 public static class Dialogos
 {
+    /// <summary>Qué hacer ante los errores más comunes (se agrega debajo del mensaje de Oracle).</summary>
+    private static readonly Dictionary<int, string> Pistas = new()
+    {
+        [1017]  = "Revise el usuario y la contraseña.",
+        [28000] = "La cuenta está bloqueada. Desbloquéela desde Seguridad o con ALTER USER … ACCOUNT UNLOCK.",
+        [12541] = "El listener no está corriendo: inicie el servicio OracleOraDB21Home1TNSListener.",
+        [12514] = "El servicio no existe en el listener. En Oracle 21c XE use XEPDB1 (no XE).",
+        [12545] = "No se encuentra el servidor: revise el host.",
+        [1031]  = "Privilegios insuficientes: use un usuario con el rol DBA.",
+        [39070] = "La carpeta del directorio no existe o Oracle no puede escribir en ella.",
+        [29283] = "La carpeta del directorio no existe o Oracle no puede escribir en ella."
+    };
+
     /// <summary>
     /// Muestra la sentencia exacta (fuente monoespaciada, con botón Copiar) y pregunta si se ejecuta.
     /// Si <paramref name="destructiva"/> es true, el botón de aceptar es rojo y dice «Ejecutar de todos modos».
@@ -48,6 +61,8 @@ public static class Dialogos
                 var detalle = new StringBuilder(ora.Message.Trim());
                 if (!ora.Message.Contains(codigo))
                     detalle.Insert(0, codigo + ": ");
+                if (Pistas.TryGetValue(ora.Number, out var pista))
+                    detalle.Append("\r\n\r\n💡 ").Append(pista);
                 using (var dlg = new DlgSql(DlgSql.Modo.Error, $"Oracle respondió {codigo}", detalle.ToString(),
                            "La operación no se completó. Este es el mensaje exacto de la base de datos:"))
                     dlg.ShowDialog(duenio);
