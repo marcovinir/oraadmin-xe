@@ -23,7 +23,7 @@ public interface IBaseDatos
     /// </summary>
     Task ConectarAsync(ConfigConexion config, string clave);
 
-    /// <summary>SELECT con variables bind. No se registra en la bitácora.</summary>
+    /// <summary>SELECT con variables bind (crearlas con <see cref="Parametro.De"/>). No se registra en la bitácora.</summary>
     Task<DataTable> ConsultarAsync(string sql, params OracleParameter[] parametros);
 
     /// <summary>SELECT que devuelve un solo valor (o null).</summary>

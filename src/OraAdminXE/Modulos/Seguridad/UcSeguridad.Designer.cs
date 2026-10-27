@@ -19,6 +19,17 @@ partial class UcSeguridad
     {
         lblTitulo = new Label();
         lblDescripcion = new Label();
+        tabSeguridad = new TabControl();
+        tabUsuarios = new TabPage();
+        ucUsuarios = new UcUsuarios();
+        tabRoles = new TabPage();
+        lblRolesPendiente = new Label();
+        tabPerfiles = new TabPage();
+        lblPerfilesPendiente = new Label();
+        tabSeguridad.SuspendLayout();
+        tabUsuarios.SuspendLayout();
+        tabRoles.SuspendLayout();
+        tabPerfiles.SuspendLayout();
         SuspendLayout();
         //
         // lblTitulo
@@ -36,7 +47,62 @@ partial class UcSeguridad
         lblDescripcion.ForeColor = Color.FromArgb(100, 116, 139);
         lblDescripcion.Location = new Point(26, 58);
         lblDescripcion.Name = "lblDescripcion";
-        lblDescripcion.Text = "Usuarios, roles, privilegios y perfiles (en construcción)";
+        lblDescripcion.Text = "Usuarios, roles, privilegios y perfiles";
+        //
+        // tabSeguridad
+        //
+        tabSeguridad.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+        tabSeguridad.Controls.Add(tabUsuarios);
+        tabSeguridad.Controls.Add(tabRoles);
+        tabSeguridad.Controls.Add(tabPerfiles);
+        tabSeguridad.Location = new Point(24, 92);
+        tabSeguridad.Name = "tabSeguridad";
+        tabSeguridad.Padding = new Point(16, 6);
+        tabSeguridad.SelectedIndex = 0;
+        tabSeguridad.Size = new Size(1052, 584);
+        tabSeguridad.TabIndex = 0;
+        //
+        // tabUsuarios
+        //
+        tabUsuarios.Controls.Add(ucUsuarios);
+        tabUsuarios.Name = "tabUsuarios";
+        tabUsuarios.Text = "Usuarios";
+        tabUsuarios.UseVisualStyleBackColor = true;
+        //
+        // ucUsuarios
+        //
+        ucUsuarios.Dock = DockStyle.Fill;
+        ucUsuarios.Name = "ucUsuarios";
+        //
+        // tabRoles
+        //
+        tabRoles.Controls.Add(lblRolesPendiente);
+        tabRoles.Name = "tabRoles";
+        tabRoles.Text = "Roles y privilegios";
+        tabRoles.UseVisualStyleBackColor = true;
+        //
+        // lblRolesPendiente
+        //
+        lblRolesPendiente.AutoSize = true;
+        lblRolesPendiente.ForeColor = Color.FromArgb(100, 116, 139);
+        lblRolesPendiente.Location = new Point(20, 20);
+        lblRolesPendiente.Name = "lblRolesPendiente";
+        lblRolesPendiente.Text = "En construcción (issue #9).";
+        //
+        // tabPerfiles
+        //
+        tabPerfiles.Controls.Add(lblPerfilesPendiente);
+        tabPerfiles.Name = "tabPerfiles";
+        tabPerfiles.Text = "Perfiles";
+        tabPerfiles.UseVisualStyleBackColor = true;
+        //
+        // lblPerfilesPendiente
+        //
+        lblPerfilesPendiente.AutoSize = true;
+        lblPerfilesPendiente.ForeColor = Color.FromArgb(100, 116, 139);
+        lblPerfilesPendiente.Location = new Point(20, 20);
+        lblPerfilesPendiente.Name = "lblPerfilesPendiente";
+        lblPerfilesPendiente.Text = "En construcción (issue #10). Cuando exista UcPerfiles, reemplazar esta etiqueta por: tabPerfiles.Controls.Add(new UcPerfiles { Dock = DockStyle.Fill })";
         //
         // UcSeguridad
         //
@@ -44,8 +110,15 @@ partial class UcSeguridad
         AutoScaleMode = AutoScaleMode.Font;
         Controls.Add(lblTitulo);
         Controls.Add(lblDescripcion);
+        Controls.Add(tabSeguridad);
         Name = "UcSeguridad";
         Size = new Size(1100, 700);
+        tabSeguridad.ResumeLayout(false);
+        tabUsuarios.ResumeLayout(false);
+        tabRoles.ResumeLayout(false);
+        tabRoles.PerformLayout();
+        tabPerfiles.ResumeLayout(false);
+        tabPerfiles.PerformLayout();
         ResumeLayout(false);
         PerformLayout();
     }
@@ -54,4 +127,11 @@ partial class UcSeguridad
 
     private Label lblTitulo;
     private Label lblDescripcion;
+    private TabControl tabSeguridad;
+    private TabPage tabUsuarios;
+    private UcUsuarios ucUsuarios;
+    private TabPage tabRoles;
+    private Label lblRolesPendiente;
+    private TabPage tabPerfiles;
+    private Label lblPerfilesPendiente;
 }
