@@ -34,11 +34,20 @@ public sealed class UcAsistenteRespaldo : UserControl
     private readonly BotonPlano _btnEjecutar = Tema.Boton("Ejecutar respaldo", primario: true, icono: "");
     private bool _nombreEditado;
     private bool _ocupado;
+    private readonly System.Windows.Forms.Timer _progreso = new() { Interval = 2000 };
+    private string? _jobEnCurso;
+    private bool _consultandoAvance;
 
     private static IBaseDatos Bd => Sesion.Bd;
 
-    /// <summary>Se dispara al terminar un respaldo (bien o mal), para que el catálogo se recargue.</summary>
-    public event EventHandler<ResultadoRespaldo?>? RespaldoTerminado;
+    /// <summary>Se dispara al empezar un respaldo (el catálogo no deja limpiar jobs mientras tanto).</summary>
+    public event EventHandler? RespaldoIniciado;
+
+    /// <summary>
+    /// Se dispara al terminar un respaldo, bien o mal, para recargar el catálogo y abrir el log.
+    /// El resultado es null si Oracle lanzó un error (el respaldo quedó en ERROR).
+    /// </summary>
+    public event EventHandler<(SolicitudRespaldo Solicitud, ResultadoRespaldo? Resultado)>? RespaldoTerminado;
 
     public UcAsistenteRespaldo()
     {
@@ -126,6 +135,7 @@ public sealed class UcAsistenteRespaldo : UserControl
         _txtNombre.KeyPress += (_, _) => _nombreEditado = true;
         _btnVerSql.Click += (_, _) => VerSql();
         _btnEjecutar.Click += async (_, _) => await EjecutarAsync();
+        _progreso.Tick += async (_, _) => await ConsultarAvanceAsync();
         _rdoEsquema.Checked = true;
     }
 
@@ -304,6 +314,9 @@ public sealed class UcAsistenteRespaldo : UserControl
         catch (Exception ex) { Dialogos.Error(this, ex); return; }
 
         Ocupado(true, $"Respaldando… job {s.Job} en ejecución" + (s.Tipo == TipoRespaldo.Full ? " (el full tarda unos minutos)" : ""));
+        _jobEnCurso = s.Job;
+        _progreso.Start();
+        RespaldoIniciado?.Invoke(this, EventArgs.Empty);
         ResultadoRespaldo? resultado = null;
         try
         {
@@ -326,10 +339,48 @@ public sealed class UcAsistenteRespaldo : UserControl
         }
         finally
         {
+            _progreso.Stop();
+            _jobEnCurso = null;
             Ocupado(false, null);
             SugerirNombre();
-            RespaldoTerminado?.Invoke(this, resultado);
+            RespaldoTerminado?.Invoke(this, (s, resultado));
         }
+    }
+
+    /// <summary>
+    /// Progreso en vivo (issue #12): por OTRA sesión del pool consulta el estado del job y su avance
+    /// en V$SESSION_LONGOPS. Si no hay avance medible, la barra sigue animada.
+    /// </summary>
+    private async Task ConsultarAvanceAsync()
+    {
+        if (_jobEnCurso is not { } job || _consultandoAvance) return;
+        _consultandoAvance = true;
+        try
+        {
+            var estado = Bd.EscalarAsync(SqlRespaldos.EstadoJob, Parametro.De("job", job));
+            var avance = Bd.ConsultarAsync(SqlRespaldos.Avance, Parametro.De("job", job));
+            await Task.WhenAll(estado, avance);
+            if (_jobEnCurso != job) return;   // ya terminó mientras consultábamos
+
+            var fila = avance.Result.Rows.Count > 0 ? avance.Result.Rows[0] : null;
+            int? pct = fila is null || fila["PCT"] is DBNull ? null : Convert.ToInt32(fila["PCT"]);
+            _barra.Porcentaje = pct;
+            _lblEstado.Text = $"Job {job}: {estado.Result ?? "iniciando"}" + (pct is null ? "…" : $" · {pct} %");
+        }
+        catch (Exception)
+        {
+            // El progreso es informativo: si una consulta falla, se reintenta en el siguiente tic.
+        }
+        finally
+        {
+            _consultandoAvance = false;
+        }
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) _progreso.Dispose();
+        base.Dispose(disposing);
     }
 
     private void Ocupado(bool ocupado, string? mensaje)
