@@ -33,14 +33,14 @@ public class RespaldosIntegracionTests : IAsyncLifetime
         {
             foreach (var ext in new[] { ".DMP", ".LOG" })
                 File.Delete(Path.Combine(_dir.RutaSo, job + ext));
-            await _bd.EjecutarAsync(Modulo.General, "Limpieza de prueba",
-                "DELETE FROM admin_bd.respaldo WHERE nombre_job = :j", Parametro.De("j", job));
+            await LimpiezaOracle.SinBitacoraAsync(_bd, "DELETE FROM admin_bd.respaldo WHERE nombre_job = :j", Parametro.De("j", job));
         }
         if (_dirMalo is not null)
         {
-            await _bd.EjecutarAsync(Modulo.General, "Limpieza de prueba", "DELETE FROM admin_bd.directorio WHERE nombre_oracle = :d", Parametro.De("d", _dirMalo));
-            await _bd.EjecutarAsync(Modulo.General, "Limpieza de prueba", $"DROP DIRECTORY {_dirMalo}");
+            await LimpiezaOracle.SinBitacoraAsync(_bd, "DELETE FROM admin_bd.directorio WHERE nombre_oracle = :d", Parametro.De("d", _dirMalo));
+            await LimpiezaOracle.SinBitacoraAsync(_bd, $"DROP DIRECTORY {_dirMalo}");
         }
+        await LimpiezaOracle.BorrarBitacoraAsync(_bd, _sufijo);
     }
 
     private string Job(string tipo)
@@ -95,7 +95,7 @@ public class RespaldosIntegracionTests : IAsyncLifetime
     {
         _dirMalo = "DIR_PRUEBA_" + _sufijo;
         await _bd.EjecutarAsync(Modulo.General, "Prueba", $@"CREATE OR REPLACE DIRECTORY {_dirMalo} AS 'C:\no_existe_{_sufijo}'");
-        await _bd.EjecutarAsync(Modulo.General, "Prueba",
+        await LimpiezaOracle.SinBitacoraAsync(_bd,
             "INSERT INTO admin_bd.directorio (nombre_oracle, ruta_so, activo) VALUES (:d, :r, 'N')",
             Parametro.De("d", _dirMalo), Parametro.De("r", $@"C:\no_existe_{_sufijo}"));
         var id = Convert.ToInt32(await _bd.EscalarAsync("SELECT id_directorio FROM admin_bd.directorio WHERE nombre_oracle = :d", Parametro.De("d", _dirMalo)));

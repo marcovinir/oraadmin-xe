@@ -50,6 +50,7 @@ public sealed class UcRestaurar : UserControl
     private readonly BotonPlano _btnVerSql = Tema.Boton("Ver SQL", icono: "");
     private readonly BotonPlano _btnRestaurar = Tema.Boton("Restaurar", primario: true, icono: "");
     private readonly BotonPlano _btnRefrescar = Tema.Boton("Refrescar", icono: "");
+    private readonly BotonPlano _btnDesastre = Tema.Boton("Simular desastre", icono: "");
     private HashSet<string> _esquemasOracle = [];
     private bool _ocupado;
 
@@ -77,7 +78,8 @@ public sealed class UcRestaurar : UserControl
         _grilla.CellFormatting += Grilla_CellFormatting;
         _grilla.SelectionChanged += async (_, _) => await ElegirRespaldoAsync();
         var refrescar = new FlowLayoutPanel { Dock = DockStyle.Right, AutoSize = true, FlowDirection = FlowDirection.RightToLeft, WrapContents = false };
-        refrescar.Controls.Add(_btnRefrescar);
+        _btnDesastre.Estilo = EstiloBoton.Peligro;
+        refrescar.Controls.AddRange([_btnRefrescar, _btnDesastre]);
         var tituloRespaldos = new Panel { Dock = DockStyle.Top, Height = 46 };
         tituloRespaldos.Controls.Add(Asistente.Seccion("1", "Respaldo", "Elija de dónde restaurar (solo los COMPLETADOS cuyo .DMP sigue en disco)"));
         tituloRespaldos.Controls.Add(refrescar);
@@ -154,6 +156,7 @@ public sealed class UcRestaurar : UserControl
         _chkRemap.CheckedChanged += (_, _) => { _txtDestino.Enabled = _chkRemap.Checked; if (_chkRemap.Checked) _txtDestino.Focus(); };
         _txtOtraTabla.KeyDown += (_, e) => { if (e.KeyCode == Keys.Enter) { AgregarTabla(); e.SuppressKeyPress = true; } };
         _btnRefrescar.Click += async (_, _) => await CargarAsync();
+        _btnDesastre.Click += async (_, _) => await SimularDesastreAsync();
         _btnVerSql.Click += (_, _) => VerSql();
         _btnRestaurar.Click += async (_, _) => await RestaurarAsync();
         _cboAccion.SelectedIndex = 0;
@@ -327,7 +330,7 @@ public sealed class UcRestaurar : UserControl
     {
         var listo = !_ocupado && Respaldo is { ExisteEnDisco: true };
         _btnRestaurar.Enabled = _btnVerSql.Enabled = listo;
-        _btnRefrescar.Enabled = !_ocupado;
+        _btnRefrescar.Enabled = _btnDesastre.Enabled = !_ocupado;
     }
 
     private SolicitudRestauracion Solicitud()
@@ -361,20 +364,28 @@ public sealed class UcRestaurar : UserControl
     private async Task RestaurarAsync()
     {
         SolicitudRestauracion s;
+        IReadOnlyList<(string Tabla, long? Filas)> antes;
+        var servicio = new ServicioRecuperacion(Bd);
         try
         {
             s = Solicitud();
-            if (!Dialogos.ConfirmarSql(this, $"Restaurar {s.Modo} con DBMS_DATAPUMP", ServicioRecuperacion.ArmarBloque(s), s.Destructiva)) return;
+            // Contador de filas antes (issue #14): se muestra en la confirmación como comentario.
+            UseWaitCursor = true;
+            antes = await servicio.ContarAsync(ServicioRecuperacion.TablasAfectadas(s));
+            UseWaitCursor = false;
+            var hoy = antes.Count == 0 ? "" :
+                "-- Hoy en la base:\r\n" + string.Join("\r\n", antes.Select(a => $"--   {a.Tabla}: {Filas(a.Filas)}")) + "\r\n\r\n";
+            if (!Dialogos.ConfirmarSql(this, $"Restaurar {s.Modo} con DBMS_DATAPUMP", hoy + ServicioRecuperacion.ArmarBloque(s), s.Destructiva)) return;
         }
-        catch (Exception ex) { Dialogos.Error(this, ex); return; }
+        catch (Exception ex) { UseWaitCursor = false; Dialogos.Error(this, ex); return; }
 
         Ocupado(true, $"Restaurando… job {s.Job} en ejecución");
         _lblResultado.Text = "";
         ResultadoRestauracion? resultado = null;
         try
         {
-            resultado = await new ServicioRecuperacion(Bd).EjecutarAsync(s);
-            MostrarResultado(s, resultado);
+            resultado = await servicio.EjecutarAsync(s);
+            MostrarResultado(s, resultado, antes);
             DlgLog.Mostrar(this, Path.Combine(s.Respaldo.RutaSo, s.ArchivoLog));
         }
         catch (Exception ex)
@@ -389,10 +400,65 @@ public sealed class UcRestaurar : UserControl
         }
     }
 
-    /// <summary>Verificación: cuántas filas quedaron en cada tabla restaurada, y avisos del log.</summary>
-    private void MostrarResultado(SolicitudRestauracion s, ResultadoRestauracion r)
+    /// <summary>
+    /// «Simular desastre» (issue #14, solo para la demo): DROP TABLE … PURGE de una tabla de DEMO_VENTAS y deja
+    /// la pantalla lista para restaurarla desde el respaldo de esquema más reciente.
+    /// </summary>
+    private async Task SimularDesastreAsync()
     {
-        var lineas = r.Conteos.Select(c => $"{c.Tabla}: {(c.Filas is { } n ? $"{n:N0} filas" : "no existe")}").ToList();
+        try
+        {
+            var esquema = SqlRecuperacion.EsquemaDemo;
+            var nombres = (await Bd.ConsultarAsync(SqlRecuperacion.TablasDe, Parametro.De("e", esquema))).AsEnumerable().Select(f => (string)f[0]).ToList();
+            if (nombres.Count == 0)
+                throw new InvalidOperationException($"El esquema {esquema} no tiene tablas: no hay nada que borrar.");
+            var conteos = await new ServicioRecuperacion(Bd).ContarAsync(nombres.Select(n => (esquema, n)));
+
+            using var dlg = new DlgSimularDesastre(conteos.Select(c => (c.Tabla.Split('.')[1], c.Filas ?? 0)));
+            if (dlg.ShowDialog(this) != DialogResult.OK) return;
+            var tabla = Identificador.Validar(dlg.Tabla, "tabla");
+            var sql = $"DROP TABLE {esquema}.{tabla} PURGE";
+            if (!Dialogos.ConfirmarSql(this, "Simular desastre", $"-- Esto es para la demostración\r\n{sql};", destructiva: true)) return;
+
+            await Bd.EjecutarAsync(Modulo.Recuperacion, "Simular desastre", sql);
+            await PrepararRestauracionAsync(esquema, tabla);
+            Toast.Mostrar(this, $"{esquema}.{tabla} se borró. Ahora presione «Restaurar».", TipoEstado.Advertencia);
+        }
+        catch (Exception ex) { Dialogos.Error(this, ex); }
+    }
+
+    /// <summary>Elige el respaldo de esquema más reciente que trae la tabla y la deja marcada para restaurar.</summary>
+    private async Task PrepararRestauracionAsync(string esquema, string tabla)
+    {
+        var fila = _grilla.Rows.Cast<DataGridViewRow>().FirstOrDefault(f =>
+            (string)f.Cells["EN_DISCO"].Value == "SÍ" && (string)f.Cells["TIPO"].Value == "SCHEMA" &&
+            f.Cells["OBJETOS"].Value is string objetos && objetos.Split(", ").Contains(esquema));
+        if (fila is null)
+        {
+            _lblEstado.Text = $"No hay un respaldo de esquema de {esquema} en disco: haga uno en Respaldos para poder restaurar.";
+            return;
+        }
+        _grilla.ClearSelection();
+        fila.Selected = true;
+        _grilla.CurrentCell = fila.Cells["TIPO"];
+        _rdoTablas.Checked = true;
+        _cboEsquema.SelectedItem = esquema;
+        await CargarTablasAsync();   // la lista sale del log del respaldo elegido
+        var i = _clbTablas.Items.IndexOf(tabla);
+        if (i < 0) i = _clbTablas.Items.Add(tabla);
+        for (var j = 0; j < _clbTablas.Items.Count; j++) _clbTablas.SetItemChecked(j, j == i);
+        _lblEstado.Text = $"Listo para restaurar {esquema}.{tabla} desde {fila.Cells["ARCHIVO_DUMP"].Value}.";
+    }
+
+    private static string Filas(long? filas) => filas is { } n ? $"{n:N0} filas" : "la tabla no existe";
+
+    /// <summary>Verificación: cuántas filas tenía y tiene ahora cada tabla restaurada, y avisos del log.</summary>
+    private void MostrarResultado(SolicitudRestauracion s, ResultadoRestauracion r, IReadOnlyList<(string Tabla, long? Filas)> antes)
+    {
+        var previas = antes.ToDictionary(a => a.Tabla, a => a.Filas);
+        var lineas = r.Conteos.Select(c => previas.TryGetValue(c.Tabla, out var a) && a != c.Filas
+            ? $"{c.Tabla}: {Filas(a)} → {Filas(c.Filas)}"
+            : $"{c.Tabla}: {Filas(c.Filas)}").ToList();
         if (r.Conteos.Count == 0) lineas.Add("Revise el log para ver lo que se importó.");
         if (r.TablasOmitidas > 0) lineas.Add($"⚠ {r.TablasOmitidas} tabla(s) omitida(s) porque ya existían (SKIP).");
         if (r.ErroresLog > 0) lineas.Add($"⚠ {r.ErroresLog} línea(s) con ORA- en el log.");

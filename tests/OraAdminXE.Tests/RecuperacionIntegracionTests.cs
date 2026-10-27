@@ -36,12 +36,12 @@ public class RecuperacionIntegracionTests : IAsyncLifetime
     {
         if (string.IsNullOrEmpty(_bd.Usuario)) return;
         foreach (var u in new[] { Origen, Copia })
-            try { await Sql($"DROP USER {u} CASCADE"); } catch (Oracle.ManagedDataAccess.Client.OracleException) { }
-        await _bd.EjecutarAsync(Modulo.General, "Limpieza de prueba",
+            await LimpiezaOracle.SinBitacoraAsync(_bd, $"DROP USER {u} CASCADE");
+        await LimpiezaOracle.SinBitacoraAsync(_bd,
             "DELETE FROM admin_bd.restauracion WHERE id_respaldo IN (SELECT id_respaldo FROM admin_bd.respaldo WHERE nombre_job LIKE :j)", Parametro.De("j", $"PRUEBA_%{_sufijo}"));
-        await _bd.EjecutarAsync(Modulo.General, "Limpieza de prueba",
-            "DELETE FROM admin_bd.respaldo WHERE nombre_job LIKE :j", Parametro.De("j", $"PRUEBA_%{_sufijo}"));
+        await LimpiezaOracle.SinBitacoraAsync(_bd, "DELETE FROM admin_bd.respaldo WHERE nombre_job LIKE :j", Parametro.De("j", $"PRUEBA_%{_sufijo}"));
         foreach (var archivo in _archivos) File.Delete(Path.Combine(_dir.RutaSo, archivo));
+        await LimpiezaOracle.BorrarBitacoraAsync(_bd, _sufijo);
     }
 
     private Task<int> Sql(string sql) => _bd.EjecutarAsync(Modulo.General, "Prueba", sql);
