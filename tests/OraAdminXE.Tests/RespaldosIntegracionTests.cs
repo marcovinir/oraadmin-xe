@@ -9,6 +9,7 @@ namespace OraAdminXE.Tests;
 /// Respaldos reales con DBMS_DATAPUMP contra Oracle (issue #11). Al terminar borra los archivos,
 /// las filas del catálogo y el directorio de prueba, para no ensuciar el catálogo de la demo.
 /// </summary>
+[Collection(ColeccionDataPump.Nombre)]
 public class RespaldosIntegracionTests : IAsyncLifetime
 {
     private readonly BaseDatos _bd = new();

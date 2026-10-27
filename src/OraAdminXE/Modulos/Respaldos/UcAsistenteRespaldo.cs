@@ -60,26 +60,26 @@ public sealed class UcAsistenteRespaldo : UserControl
         var tipos = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 92, FlowDirection = FlowDirection.TopDown, WrapContents = false };
         tipos.Controls.AddRange([_rdoEsquema, _rdoTabla, _rdoFull]);
 
-        _marcar.Controls.AddRange([Enlace("Marcar todos", () => Marcar(true)), Enlace("Ninguno", () => Marcar(false))]);
-        _pnlEsquemas.Controls.Add(Marco(_clbEsquemas));
+        _marcar.Controls.AddRange([Asistente.Enlace("Marcar todos", () => Marcar(true)), Asistente.Enlace("Ninguno", () => Marcar(false))]);
+        _pnlEsquemas.Controls.Add(Asistente.Marco(_clbEsquemas));
         var esquemaTablas = new Panel { Dock = DockStyle.Top, Height = 44, Padding = new Padding(0, 0, 0, 8) };
         esquemaTablas.Controls.Add(_cboEsquemaTablas);
         esquemaTablas.Controls.Add(new Label { Text = "Esquema", AutoSize = false, Width = 76, Dock = DockStyle.Left, TextAlign = ContentAlignment.TopLeft, Padding = new Padding(0, 4, 0, 0) });
-        _pnlTablas.Controls.Add(Marco(_clbTablas));
+        _pnlTablas.Controls.Add(Asistente.Marco(_clbTablas));
         _pnlTablas.Controls.Add(esquemaTablas);
         var objetos = new Panel { Dock = DockStyle.Fill };
         objetos.Controls.AddRange([_pnlEsquemas, _pnlTablas, _lblFull, _marcar]);
 
         var izquierda = new Panel { Dock = DockStyle.Fill, Padding = new Padding(0, 0, 20, 0) };
         izquierda.Controls.Add(objetos);
-        izquierda.Controls.Add(Seccion("2", "Objetos", "Marque lo que quiere respaldar"));
+        izquierda.Controls.Add(Asistente.Seccion("2", "Objetos", "Marque lo que quiere respaldar"));
         izquierda.Controls.Add(tipos);
-        izquierda.Controls.Add(Seccion("1", "Tipo de respaldo", "Modo de Data Pump (job_mode)"));
+        izquierda.Controls.Add(Asistente.Seccion("1", "Tipo de respaldo", "Modo de Data Pump (job_mode)"));
 
         // ---- Derecha: dónde guardarlo
         var nombre = new Panel { Dock = DockStyle.Top, Height = 28 };
         nombre.Controls.Add(_txtNombre);
-        var sugerir = Enlace("Sugerir otro nombre", () => SugerirNombre());
+        var sugerir = Asistente.Enlace("Sugerir otro nombre", () => SugerirNombre());
         sugerir.Dock = DockStyle.Right;
         sugerir.Padding = new Padding(0, 6, 0, 0);
         var archivos = new Panel { Dock = DockStyle.Top, Height = 58 };
@@ -90,18 +90,14 @@ public sealed class UcAsistenteRespaldo : UserControl
 
         var derecha = new Panel { Dock = DockStyle.Fill, Padding = new Padding(20, 0, 0, 0) };
         derecha.Controls.Add(observacion);
-        derecha.Controls.Add(Seccion("5", "Observación", "Opcional: queda en el catálogo"));
+        derecha.Controls.Add(Asistente.Seccion("5", "Observación", "Opcional: queda en el catálogo"));
         derecha.Controls.Add(archivos);
         derecha.Controls.Add(nombre);
-        derecha.Controls.Add(Seccion("4", "Nombre del respaldo", "Es el nombre del job y de los archivos"));
-        derecha.Controls.Add(Espacio(12));
+        derecha.Controls.Add(Asistente.Seccion("4", "Nombre del respaldo", "Es el nombre del job y de los archivos"));
+        derecha.Controls.Add(Asistente.Espacio(12));
         derecha.Controls.Add(_cboDirectorio);
-        derecha.Controls.Add(Seccion("3", "Directorio", "Objeto DIRECTORY donde Oracle escribe el .DMP"));
-        derecha.Paint += (_, e) =>
-        {
-            using var lapiz = new Pen(Tema.Borde);
-            e.Graphics.DrawLine(lapiz, 0, 0, 0, derecha.Height);
-        };
+        derecha.Controls.Add(Asistente.Seccion("3", "Directorio", "Objeto DIRECTORY donde Oracle escribe el .DMP"));
+        Asistente.Divisoria(derecha, arriba: false);
 
         var division = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2 };
         division.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 52));
@@ -118,11 +114,7 @@ public sealed class UcAsistenteRespaldo : UserControl
         var pie = new Panel { Dock = DockStyle.Bottom, Height = 62 };
         pie.Controls.Add(estado);
         pie.Controls.Add(botones);
-        pie.Paint += (_, e) =>
-        {
-            using var lapiz = new Pen(Tema.Borde);
-            e.Graphics.DrawLine(lapiz, 0, 0, pie.Width, 0);
-        };
+        Asistente.Divisoria(pie, arriba: true);
 
         Controls.Add(division);
         Controls.Add(pie);
@@ -139,51 +131,8 @@ public sealed class UcAsistenteRespaldo : UserControl
         _rdoEsquema.Checked = true;
     }
 
-    // ------------------------------------------------------------------ construcción
-
     private static RadioButton Opcion(string texto, string detalle) =>
         new() { Text = $"{texto}   —   {detalle}", AutoSize = true, Margin = new Padding(2, 2, 0, 4), Tag = texto };
-
-    /// <summary>Encabezado numerado de cada paso del asistente.</summary>
-    private static Control Seccion(string numero, string titulo, string detalle)
-    {
-        var panel = new Panel { Dock = DockStyle.Top, Height = 46 };
-        panel.Paint += (_, e) =>
-        {
-            var g = e.Graphics;
-            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-            using (var circulo = new SolidBrush(Tema.AcentoSuave)) g.FillEllipse(circulo, 0, 10, 24, 24);
-            TextRenderer.DrawText(g, numero, Tema.FuenteNegrita, new Rectangle(0, 10, 24, 24), Tema.AcentoTexto,
-                TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
-            TextRenderer.DrawText(g, titulo, Tema.FuenteNegrita, new Point(34, 12), Tema.Texto);
-            var ancho = TextRenderer.MeasureText(titulo, Tema.FuenteNegrita).Width;
-            TextRenderer.DrawText(g, detalle, Tema.Fuente, new Point(34 + ancho + 6, 12), Tema.TextoSecundario);
-        };
-        return panel;
-    }
-
-    private static Control Espacio(int alto) => new Panel { Dock = DockStyle.Top, Height = alto };
-
-    /// <summary>Borde fino alrededor de una lista (el CheckedListBox sin borde se ve mejor en oscuro).</summary>
-    private static Control Marco(Control lista)
-    {
-        var marco = new Panel { Dock = DockStyle.Fill, Padding = new Padding(1), BackColor = Tema.BordeFuerte };
-        var interior = new Panel { Dock = DockStyle.Fill, Padding = new Padding(8, 6, 4, 4), BackColor = Tema.SuperficieAlta };
-        interior.Controls.Add(lista);
-        marco.Controls.Add(interior);
-        return marco;
-    }
-
-    private static LinkLabel Enlace(string texto, Action accion)
-    {
-        var enlace = new LinkLabel
-        {
-            Text = texto, AutoSize = true, LinkColor = Tema.AcentoTexto, ActiveLinkColor = Tema.AcentoHover,
-            LinkBehavior = LinkBehavior.HoverUnderline, Margin = new Padding(0, 8, 16, 0)
-        };
-        enlace.LinkClicked += (_, _) => accion();
-        return enlace;
-    }
 
     // ------------------------------------------------------------------ datos
 

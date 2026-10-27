@@ -19,6 +19,7 @@ partial class UcRecuperacion
     {
         lblTitulo = new Label();
         lblDescripcion = new Label();
+        pestanas = new OraAdminXE.UI.Pestanas();
         SuspendLayout();
         //
         // lblTitulo
@@ -36,7 +37,15 @@ partial class UcRecuperacion
         lblDescripcion.ForeColor = Color.FromArgb(100, 116, 139);
         lblDescripcion.Location = new Point(26, 58);
         lblDescripcion.Name = "lblDescripcion";
-        lblDescripcion.Text = "Restaurar respaldos completos, esquemas o tablas (en construcción)";
+        lblDescripcion.Text = "Restaurar respaldos completos, esquemas o tablas con Data Pump (DBMS_DATAPUMP)";
+        //
+        // pestanas (las pestañas se agregan en el constructor de UcRecuperacion)
+        //
+        pestanas.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+        pestanas.Location = new Point(24, 88);
+        pestanas.Name = "pestanas";
+        pestanas.Size = new Size(1052, 588);
+        pestanas.TabIndex = 0;
         //
         // UcRecuperacion
         //
@@ -44,6 +53,7 @@ partial class UcRecuperacion
         AutoScaleMode = AutoScaleMode.Font;
         Controls.Add(lblTitulo);
         Controls.Add(lblDescripcion);
+        Controls.Add(pestanas);
         Name = "UcRecuperacion";
         Size = new Size(1100, 700);
         ResumeLayout(false);
@@ -54,4 +64,5 @@ partial class UcRecuperacion
 
     private Label lblTitulo;
     private Label lblDescripcion;
+    private OraAdminXE.UI.Pestanas pestanas;
 }
