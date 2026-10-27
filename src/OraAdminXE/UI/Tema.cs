@@ -47,6 +47,15 @@ public static class Tema
         grilla.ColumnHeadersDefaultCellStyle.BackColor = Fondo;
         grilla.ColumnHeadersDefaultCellStyle.ForeColor = Texto;
         grilla.ColumnHeadersDefaultCellStyle.Font = new Font(Fuente, FontStyle.Bold);
+        grilla.ColumnHeadersDefaultCellStyle.SelectionBackColor = Fondo;
+        grilla.ColumnHeadersDefaultCellStyle.SelectionForeColor = Texto;
+        grilla.ColumnHeadersDefaultCellStyle.Padding = new Padding(4, 0, 0, 0);
+        grilla.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
+        grilla.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
+        grilla.ColumnHeadersHeight = 36;
+        grilla.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
+        // Al cargar datos no queda ninguna fila marcada.
+        grilla.DataBindingComplete += (_, _) => grilla.ClearSelection();
         grilla.DefaultCellStyle.Font = Fuente;
         grilla.DefaultCellStyle.SelectionBackColor = Color.FromArgb(254, 226, 226);
         grilla.DefaultCellStyle.SelectionForeColor = Texto;

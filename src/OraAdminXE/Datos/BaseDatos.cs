@@ -48,7 +48,7 @@ public sealed class BaseDatos : IBaseDatos
     {
         await using var conexion = await AbrirAsync();
         await using var cmd = Comando(conexion, sql, parametros);
-        await using var lector = await cmd.ExecuteReaderAsync();
+        await using var lector = await LeerAsync(cmd);
         var tabla = new DataTable();
         tabla.Load(lector);
         return tabla;
@@ -58,7 +58,9 @@ public sealed class BaseDatos : IBaseDatos
     {
         await using var conexion = await AbrirAsync();
         await using var cmd = Comando(conexion, sql, parametros);
-        var valor = await cmd.ExecuteScalarAsync();
+        await using var lector = await LeerAsync(cmd);
+        if (!await lector.ReadAsync()) return null;
+        var valor = lector.GetValue(0);
         return valor is DBNull ? null : valor;
     }
 
@@ -126,6 +128,17 @@ public sealed class BaseDatos : IBaseDatos
         var cmd = new OracleCommand(Sentencias.Normalizar(sql), conexion) { BindByName = true, CommandTimeout = 0 };
         cmd.Parameters.AddRange(parametros);
         return cmd;
+    }
+
+    /// <summary>
+    /// Un NUMBER de Oracle puede tener hasta 38 dígitos (por ejemplo 1/3 o SYSDATE - fecha) y el decimal de .NET
+    /// solo 28: sin esto, leerlo lanza OverflowException. Así se recorta a 28 dígitos significativos.
+    /// </summary>
+    private static async Task<OracleDataReader> LeerAsync(OracleCommand cmd)
+    {
+        var lector = (OracleDataReader)await cmd.ExecuteReaderAsync();
+        lector.SuppressGetDecimalInvalidCastException = true;
+        return lector;
     }
 
     private static string? Recortar(string? texto, int maximo) =>

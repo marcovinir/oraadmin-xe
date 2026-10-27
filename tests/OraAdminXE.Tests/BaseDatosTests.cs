@@ -58,6 +58,14 @@ public class BaseDatosTests : IAsyncLifetime
     }
 
     [OracleFact]
+    public async Task Numeros_con_muchos_decimales_no_desbordan()
+    {
+        var tabla = await _bd.ConsultarAsync("SELECT 1/3 AS tercio, SYSDATE - (SYSDATE - 1/7) AS dias FROM dual");
+        Assert.Equal(0.3333m, Math.Round(Convert.ToDecimal(tabla.Rows[0]["TERCIO"]), 4));
+        Assert.Equal(0.3333m, Math.Round(Convert.ToDecimal(await _bd.EscalarAsync("SELECT 1/3 FROM dual")), 4));
+    }
+
+    [OracleFact]
     public async Task Escalar_devuelve_null_si_no_hay_valor() =>
         Assert.Null(await _bd.EscalarAsync("SELECT NULL FROM dual"));
 
