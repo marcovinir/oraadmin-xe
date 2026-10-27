@@ -91,6 +91,7 @@ sqlplus admin_bd@localhost:1521/XEPDB1 @sql/02_demo_ventas.sql
 | [`00_setup_sys.sql`](sql/00_setup_sys.sql) | `SYS` | Crea el usuario `ADMIN_BD` (pide la contraseña), le da los privilegios y crea `DIR_RESPALDOS` |
 | [`01_modelo_3fn.sql`](sql/01_modelo_3fn.sql) | `ADMIN_BD` | Crea las 13 tablas del modelo en 3FN, los índices, las vistas y los catálogos |
 | [`02_demo_ventas.sql`](sql/02_demo_ventas.sql) | `ADMIN_BD` | Crea el esquema `DEMO_VENTAS` con 252 500 filas de prueba |
+| [`98_vaciar_bitacora.sql`](sql/98_vaciar_bitacora.sql) | `ADMIN_BD` | Vacía la bitácora y el historial de rendimiento antes de la demo |
 | [`99_limpieza.sql`](sql/99_limpieza.sql) | `SYS` | Borra todo para reinstalar desde cero |
 
 **3. Abrir y correr la app**

@@ -10,6 +10,7 @@ Es una historia de **~15 minutos** en la que cada módulo hace algo visible. Hay
 - [ ] Tener abiertas **dos ventanas de SQL Developer** conectadas como `DEMO_VENTAS`, para la demo de bloqueo.
 - [ ] Tener ya hecho un **respaldo del esquema `DEMO_VENTAS`**, por si el paso 7 falla (plan B).
 - [ ] Conectar el cargador de la laptop y desactivar las notificaciones.
+- [ ] **Último paso antes de empezar:** vaciar la bitácora con `sqlplus admin_bd@localhost:1521/XEPDB1 @sql/98_vaciar_bitacora.sql`, para que en el paso 10 solo se vea lo que se hizo en vivo. El catálogo de respaldos no se toca.
 
 ## Guion
 
