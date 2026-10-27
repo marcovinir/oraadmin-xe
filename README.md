@@ -125,9 +125,9 @@ oraadmin-xe/
 | Rol | Módulos | Integrante |
 |---|---|---|
 | **Persona 1 — Núcleo** | Login, Inicio, Seguridad (usuarios, roles y privilegios) + capa de datos y diálogos | [@marcovinir](https://github.com/marcovinir) |
-| **Persona 2 — Respaldos** | Respaldos, Recuperación, Bitácora, Seguridad (perfiles) | _por asignar_ |
-| **Persona 3 — Almacenamiento y auditoría** | Tablespaces, Directorios y archivos, Auditoría + manual | _por asignar_ |
-| **Persona 4 — Rendimiento** | Tuning, Performance | _por asignar_ |
+| **Persona 2 — Respaldos** | Respaldos, Recuperación, Bitácora, Seguridad (perfiles) | [@You9123](https://github.com/You9123) |
+| **Persona 3 — Almacenamiento y auditoría** | Tablespaces, Directorios y archivos, Auditoría + manual | [@IvanF05-5](https://github.com/IvanF05-5) |
+| **Persona 4 — Rendimiento** | Tuning, Performance | [@josegaritaest](https://github.com/josegaritaest) |
 
 ## Cronograma
 
