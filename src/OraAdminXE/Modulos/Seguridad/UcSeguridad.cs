@@ -16,5 +16,10 @@ public partial class UcSeguridad : ModuloBase
 
     public override Modulo Modulo => Modulo.Seguridad;
 
-    public override Task AlActivarAsync() => ucUsuarios.CargarAsync();
+    public override Task AlActivarAsync() => CargarPestanaAsync();
+
+    private async void TabSeguridad_SelectedIndexChanged(object? sender, EventArgs e) => await CargarPestanaAsync();
+
+    /// <summary>Carga solo la pestaña visible (cada una consulta lo suyo al abrirse).</summary>
+    private Task CargarPestanaAsync() => tabSeguridad.SelectedTab == tabRoles ? ucRoles.CargarAsync() : ucUsuarios.CargarAsync();
 }

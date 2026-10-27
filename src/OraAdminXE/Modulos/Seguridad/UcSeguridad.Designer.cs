@@ -23,7 +23,7 @@ partial class UcSeguridad
         tabUsuarios = new TabPage();
         ucUsuarios = new UcUsuarios();
         tabRoles = new TabPage();
-        lblRolesPendiente = new Label();
+        ucRoles = new UcRoles();
         tabPerfiles = new TabPage();
         lblPerfilesPendiente = new Label();
         tabSeguridad.SuspendLayout();
@@ -61,6 +61,7 @@ partial class UcSeguridad
         tabSeguridad.SelectedIndex = 0;
         tabSeguridad.Size = new Size(1052, 584);
         tabSeguridad.TabIndex = 0;
+        tabSeguridad.SelectedIndexChanged += TabSeguridad_SelectedIndexChanged;
         //
         // tabUsuarios
         //
@@ -76,18 +77,15 @@ partial class UcSeguridad
         //
         // tabRoles
         //
-        tabRoles.Controls.Add(lblRolesPendiente);
+        tabRoles.Controls.Add(ucRoles);
         tabRoles.Name = "tabRoles";
         tabRoles.Text = "Roles y privilegios";
         tabRoles.UseVisualStyleBackColor = true;
         //
-        // lblRolesPendiente
+        // ucRoles
         //
-        lblRolesPendiente.AutoSize = true;
-        lblRolesPendiente.ForeColor = Color.FromArgb(100, 116, 139);
-        lblRolesPendiente.Location = new Point(20, 20);
-        lblRolesPendiente.Name = "lblRolesPendiente";
-        lblRolesPendiente.Text = "En construcción (issue #9).";
+        ucRoles.Dock = DockStyle.Fill;
+        ucRoles.Name = "ucRoles";
         //
         // tabPerfiles
         //
@@ -116,7 +114,6 @@ partial class UcSeguridad
         tabSeguridad.ResumeLayout(false);
         tabUsuarios.ResumeLayout(false);
         tabRoles.ResumeLayout(false);
-        tabRoles.PerformLayout();
         tabPerfiles.ResumeLayout(false);
         tabPerfiles.PerformLayout();
         ResumeLayout(false);
@@ -131,7 +128,7 @@ partial class UcSeguridad
     private TabPage tabUsuarios;
     private UcUsuarios ucUsuarios;
     private TabPage tabRoles;
-    private Label lblRolesPendiente;
+    private UcRoles ucRoles;
     private TabPage tabPerfiles;
     private Label lblPerfilesPendiente;
 }

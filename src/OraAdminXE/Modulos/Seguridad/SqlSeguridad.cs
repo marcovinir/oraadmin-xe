@@ -23,4 +23,40 @@ public static class SqlSeguridad
     public const string Perfiles = "SELECT DISTINCT profile FROM dba_profiles ORDER BY profile";
 
     public const string EstadoUsuario = "SELECT account_status FROM dba_users WHERE username = :u";
+
+    /// <summary>Roles con cuántos usuarios o roles lo tienen; los de Oracle al final.</summary>
+    public const string Roles = """
+        SELECT r.role, r.oracle_maintained,
+               (SELECT COUNT(*) FROM dba_role_privs p WHERE p.granted_role = r.role) AS otorgado_a
+        FROM dba_roles r
+        WHERE (:todos = 1 OR r.oracle_maintained = 'N')
+        ORDER BY r.oracle_maintained, r.role
+        """;
+
+    /// <summary>A quiénes se les puede otorgar algo: usuarios y roles que no son de Oracle.</summary>
+    public const string Beneficiarios = """
+        SELECT username AS nombre, 'USUARIO' AS tipo FROM dba_users WHERE oracle_maintained = 'N'
+        UNION ALL
+        SELECT role, 'ROL' FROM dba_roles WHERE oracle_maintained = 'N'
+        ORDER BY 2 DESC, 1
+        """;
+
+    /// <summary>Todo lo que tiene un usuario o rol: roles, privilegios de sistema y de objeto.</summary>
+    public const string PrivilegiosDe = """
+        SELECT 'ROL' AS tipo, granted_role AS privilegio, CAST(NULL AS VARCHAR2(261)) AS objeto, admin_option AS con_opcion
+        FROM dba_role_privs WHERE grantee = :g
+        UNION ALL
+        SELECT 'SISTEMA', privilege, NULL, admin_option FROM dba_sys_privs WHERE grantee = :g
+        UNION ALL
+        SELECT 'OBJETO', privilege, owner || '.' || table_name, grantable FROM dba_tab_privs WHERE grantee = :g AND type = 'TABLE'
+        ORDER BY 1, 2, 3
+        """;
+
+    public const string TodosLosRoles = "SELECT role FROM dba_roles ORDER BY oracle_maintained, role";
+
+    public const string PrivilegiosSistema = "SELECT name FROM system_privilege_map ORDER BY name";
+
+    public const string Esquemas = "SELECT username FROM dba_users WHERE oracle_maintained = 'N' ORDER BY username";
+
+    public const string TablasDe = "SELECT table_name FROM dba_tables WHERE owner = :e ORDER BY table_name";
 }
