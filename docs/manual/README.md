@@ -7,9 +7,9 @@
 | Página | Contenido | Responsable |
 |:-:|---|---|
 | 1 | Requisitos, instalación (scripts SQL en orden), primer arranque y login | Persona 1 |
-| 2 | Inicio, Tablespaces, Seguridad y Auditoría: una captura y 3 o 4 pasos por módulo | Personas 1 y 3 |
+| 2 | Inicio, Tablespaces, Seguridad y Auditoría: una captura y 3 o 4 pasos por módulo | Personas 1, 2 (perfiles) y 3 |
 | 3 | Tuning, Performance, Directorios y archivos | Personas 3 y 4 |
-| 4 | Respaldos y Recuperación paso a paso, errores comunes y cómo resolverlos | Persona 2 |
+| 4 | Respaldos, Recuperación y Bitácora paso a paso, errores comunes y cómo resolverlos | Persona 2 |
 
 **Coordina:** Persona 3, que junta las secciones, da el formato y exporta a PDF.
 

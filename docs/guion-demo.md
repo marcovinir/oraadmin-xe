@@ -24,7 +24,7 @@ Es una historia de **~15 minutos** en la que cada módulo hace algo visible. Hay
 | 7 | P2 | Respaldos | Respaldo **por tabla** (`FACTURA`), **por esquema** (`DEMO_VENTAS`) y **full**, con progreso y log. Ver el catálogo | 2 min |
 | 8 | P2 | Recuperación | `DROP TABLE demo_ventas.detalle_factura PURGE` → `COUNT(*)` da error → restaurar **solo** `DETALLE_FACTURA` desde el respaldo del esquema → `COUNT(*)` = **200 000**. Restaurar el esquema completo como `DEMO_COPIA` (`REMAP_SCHEMA`) | 2 min |
 | 9 | P3 | Directorios y archivos | Crear `DIR_RESPALDOS2`, ver los `.dmp`/`.log` con tamaño y fecha, abrir un log y borrar un respaldo viejo (pasa a `ELIMINADO` en el catálogo) | 1 min |
-| 10 | P1 | Bitácora | Todo lo que se hizo durante la demo, con su SQL y su resultado (filtrar por módulo) | 0,5 min |
+| 10 | P2 | Bitácora | Todo lo que se hizo durante la demo, con su SQL y su resultado (filtrar por módulo) | 0,5 min |
 
 ## Plan B
 
