@@ -120,7 +120,7 @@ public partial class UcTablespaces : ModuloBase
 | `IBaseDatos` (contrato) | `Datos/IBaseDatos.cs` | ✅ definido |
 | `BaseDatos` (implementación) | `Datos/BaseDatos.cs` | ✅ listo (#3) |
 | `Identificador` | `Datos/Identificador.cs` | ✅ listo |
-| `Dialogos` | `UI/Dialogos.cs` | ⏳ #4 |
+| `Dialogos` + `DlgSql` + `Csv` | `UI/` | ✅ listo (#4) |
 | `FrmLogin` | `UI/FrmLogin.cs` | ⏳ #5 |
 | `FrmPrincipal` + menú | `UI/FrmPrincipal.cs` | ✅ listo |
 | `Tema` | `UI/Tema.cs` | ✅ listo |
