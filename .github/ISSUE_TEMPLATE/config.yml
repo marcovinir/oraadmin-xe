@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 📘 Documento de diseño
+    url: https://github.com/marcovinir/oraadmin-xe/blob/main/docs/diseno.md
+    about: Alcance, pantallas, reglas comunes y decisiones del proyecto
+  - name: 🧾 Referencia SQL por módulo
+    url: https://github.com/marcovinir/oraadmin-xe/blob/main/docs/referencia-sql.md
+    about: Consultas y sentencias probadas en Oracle 21c XE

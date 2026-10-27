@@ -1,0 +1,6 @@
+{
+  "Host": "localhost",
+  "Puerto": 1521,
+  "Servicio": "XEPDB1",
+  "Usuario": "ADMIN_BD"
+}

@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>OraAdminXE</RootNamespace>
+    <AssemblyName>OraAdminXE</AssemblyName>
+    <Product>OraAdmin XE</Product>
+    <Description>Consola DBA para Oracle 21c XE — Proyecto Final EIF-402, UNA</Description>
+    <Version>0.1.0</Version>
+    <!-- SkiaSharp (dependencia de ScottPlot) avisa de compatibilidad con .NET Framework; funciona en .NET 8. -->
+    <NoWarn>$(NoWarn);NU1701</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Oracle.ManagedDataAccess.Core" Version="23.26.400" />
+    <PackageReference Include="ScottPlot.WinForms" Version="5.1.59" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="conexion.ejemplo.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

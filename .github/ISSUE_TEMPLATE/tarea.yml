@@ -1,0 +1,32 @@
+name: 🧩 Tarea
+description: Una funcionalidad o pieza de trabajo del proyecto
+title: "[Módulo] Qué se va a hacer"
+labels: ["tipo: funcionalidad"]
+body:
+  - type: textarea
+    id: contexto
+    attributes:
+      label: Contexto
+      description: ¿Por qué hace falta? ¿Qué parte del enunciado cubre?
+    validations:
+      required: true
+  - type: textarea
+    id: que-hacer
+    attributes:
+      label: Qué hay que hacer
+      description: Pasos concretos, archivos a tocar y SQL de referencia.
+    validations:
+      required: true
+  - type: textarea
+    id: aceptacion
+    attributes:
+      label: Criterios de aceptación
+      description: Lista de casillas que se pueden comprobar con F5 contra Oracle.
+      value: |
+        - [ ] 
+    validations:
+      required: true
+  - type: textarea
+    id: notas
+    attributes:
+      label: Notas o dependencias

@@ -1,0 +1,38 @@
+# --- Visual Studio / .NET ---
+.vs/
+bin/
+obj/
+*.user
+*.suo
+*.userprefs
+*.rsuser
+[Dd]ebug/
+[Rr]elease/
+publish/
+artifacts/
+*.nupkg
+TestResults/
+
+# --- Rider / VS Code ---
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# --- Configuración local (puede tener datos de cada máquina) ---
+conexion.json
+*.env
+.env.*
+
+# --- Respaldos de Oracle: NUNCA al repo ---
+*.dmp
+*.DMP
+*.log
+*.LOG
+
+# --- Sistema operativo ---
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# --- Office (archivos temporales del manual) ---
+~$*
