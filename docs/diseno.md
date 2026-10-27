@@ -118,15 +118,15 @@ public partial class UcTablespaces : ModuloBase
 | Pieza | Archivo | Estado |
 |---|---|---|
 | `IBaseDatos` (contrato) | `Datos/IBaseDatos.cs` | ✅ definido |
-| `BaseDatos` (implementación) | `Datos/BaseDatos.cs` | ⏳ issue Núcleo |
+| `BaseDatos` (implementación) | `Datos/BaseDatos.cs` | ⏳ #3 |
 | `Identificador` | `Datos/Identificador.cs` | ✅ listo |
-| `Dialogos` | `UI/Dialogos.cs` | ⏳ issue Núcleo |
-| `FrmLogin` | `UI/FrmLogin.cs` | ⏳ issue Núcleo |
+| `Dialogos` | `UI/Dialogos.cs` | ⏳ #4 |
+| `FrmLogin` | `UI/FrmLogin.cs` | ⏳ #5 |
 | `FrmPrincipal` + menú | `UI/FrmPrincipal.cs` | ✅ listo |
 | `Tema` | `UI/Tema.cs` | ✅ listo |
 | Pantallas | `Modulos/*/Uc*.cs` | ⏳ una issue por módulo |
 
-**Mientras el Núcleo no esté listo** (martes 27), cada persona puede diseñar sus pantallas en el diseñador de Visual Studio y probar sus consultas en SQL Developer: el contrato ya está definido.
+**Mientras el Núcleo no esté listo** (martes 27, issues #3 y #4), cada persona puede diseñar sus pantallas en el diseñador de Visual Studio y probar sus consultas en SQL Developer: el contrato ya está definido.
 
 ## 6. Trampas conocidas (leer antes de empezar)
 

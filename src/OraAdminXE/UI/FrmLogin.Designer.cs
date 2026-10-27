@@ -36,7 +36,7 @@ partial class FrmLogin
         lblPendiente.Location = new Point(34, 80);
         lblPendiente.Name = "lblPendiente";
         lblPendiente.Size = new Size(330, 60);
-        lblPendiente.Text = "Pantalla de login en construcción (issue «Núcleo: pantalla de login»).";
+        lblPendiente.Text = "Pantalla de login en construcción (issue #5).";
         //
         // btnEntrar
         //

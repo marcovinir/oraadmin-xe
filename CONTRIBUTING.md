@@ -19,12 +19,12 @@ git pull origin main
 git checkout -b feature/respaldos      # una rama por issue o por módulo
 # ... trabajar, probar con F5 ...
 git add src/OraAdminXE/Modulos/Respaldos
-git commit -m "Respaldos: export por esquema con DBMS_DATAPUMP (#12)"
+git commit -m "Respaldos: export por esquema con DBMS_DATAPUMP (#11)"
 git push -u origin feature/respaldos
 gh pr create --fill                    # o desde la web de GitHub
 ```
 
-Cuando el PR se une, se borra la rama y se cierra la issue (`Closes #12` en la descripción del PR la cierra sola).
+Cuando el PR se une, se borra la rama y se cierra la issue (`Closes #11` en la descripción del PR la cierra sola).
 
 ### Ramas
 
@@ -40,9 +40,9 @@ Cuando el PR se une, se borra la rama y se cierra la issue (`Closes #12` en la d
 Se escriben en español, en presente, con el módulo al inicio y la issue al final:
 
 ```text
-Tablespaces: crear tablespace con autoextend (#8)
-Núcleo: diálogo Ver SQL con botón Copiar (#3)
-Manual: sección de respaldos y recuperación (#27)
+Tablespaces: crear tablespace con autoextend (#16)
+Núcleo: diálogo Ver SQL con botón Copiar (#4)
+Manual: sección de respaldos y recuperación (#26)
 ```
 
 ### Pull Requests
