@@ -24,6 +24,20 @@ public static class SqlRecuperacion
 
     public const string ExisteTabla = "SELECT COUNT(*) FROM dba_tables WHERE owner = :e AND table_name = :t";
 
+    /// <summary>Historial de restauraciones con sus objetos y la carpeta donde quedó el log (issue #14).</summary>
+    public const string Historial = """
+        SELECT r.*, d.ruta_so,
+               (SELECT LISTAGG(NVL2(o.tabla, o.esquema || '.' || o.tabla, o.esquema), ', ')
+                       WITHIN GROUP (ORDER BY o.esquema, o.tabla)
+                FROM admin_bd.restauracion_objeto o WHERE o.id_restauracion = r.id_restauracion) AS objetos
+        FROM admin_bd.v_restauraciones r
+        JOIN admin_bd.directorio d ON d.nombre_oracle = r.directorio
+        ORDER BY r.fecha_inicio DESC, r.id_restauracion DESC
+        """;
+
+    /// <summary>Esquema de la demo para «Simular desastre».</summary>
+    public const string EsquemaDemo = "DEMO_VENTAS";
+
     public const string InsertarRestauracion = """
         INSERT INTO admin_bd.restauracion (id_respaldo, nombre_job, esquema_destino, accion_existente, archivo_log, estado, usuario_bd)
         VALUES (:respaldo, :job, :destino, :accion, :log, 'EN_PROCESO', USER)
