@@ -69,7 +69,7 @@ En Visual Studio: *Prueba → Explorador de pruebas* (define las variables antes
 | Qué | Convención | Ejemplo |
 |---|---|---|
 | Pantallas de módulo | `Uc<Módulo>` en `Modulos/<Módulo>/` | `UcRespaldos` |
-| Formularios o diálogos | `Frm<Nombre>` / `Dlg<Nombre>` | `FrmLogin`, `DlgNuevoUsuario` |
+| Formularios o diálogos | `Frm<Nombre>` / `Dlg<Nombre>`, **heredan de `VentanaBase`** | `FrmLogin`, `DlgNuevoUsuario` |
 | Controles | prefijo de tipo + nombre en PascalCase | `btnCrear`, `txtNombre`, `grdTablespaces`, `cboTipo`, `chkAutoextend`, `numTamano`, `tabSeguridad` |
 | Campos privados | `_camelCase` | `_temporizador` |
 | Métodos async | sufijo `Async` | `CargarAsync()` |

@@ -20,11 +20,11 @@ public sealed class UcRoles : UserControl
     private readonly ComboBox _cboBeneficiario = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 300, Margin = new Padding(0, 8, 8, 0) };
     private readonly CheckBox _chkOracle = new() { Text = "Mostrar roles de Oracle", AutoSize = true, Dock = DockStyle.Bottom, Padding = new Padding(0, 6, 0, 0) };
     private readonly Label _lblPie = new() { Dock = DockStyle.Bottom, Height = 30, ForeColor = Tema.TextoSecundario, TextAlign = ContentAlignment.MiddleLeft };
-    private readonly Button _btnCrearRol = Tema.Boton("＋  Crear rol", primario: true);
-    private readonly Button _btnEliminarRol = Tema.Boton("Eliminar rol");
-    private readonly Button _btnOtorgar = Tema.Boton("Otorgar…", primario: true);
-    private readonly Button _btnRevocar = Tema.Boton("Revocar");
-    private readonly Button _btnRefrescar = Tema.Boton("⟳  Refrescar");
+    private readonly BotonPlano _btnCrearRol = Tema.Boton("Crear rol", primario: true, icono: "");
+    private readonly BotonPlano _btnEliminarRol = Tema.Boton("Eliminar rol", icono: "");
+    private readonly BotonPlano _btnOtorgar = Tema.Boton("Otorgar…", primario: true, icono: "");
+    private readonly BotonPlano _btnRevocar = Tema.Boton("Revocar", icono: "");
+    private readonly BotonPlano _btnRefrescar = Tema.Boton("Refrescar", icono: "");
     private bool _cargando;
 
     private static IBaseDatos Bd => Sesion.Bd;
@@ -35,7 +35,7 @@ public sealed class UcRoles : UserControl
         BackColor = Tema.Superficie;
         Padding = new Padding(16, 12, 16, 8);
         Font = Tema.Fuente;
-        _btnEliminarRol.ForeColor = _btnRevocar.ForeColor = Tema.Peligro;
+        _btnEliminarRol.Estilo = _btnRevocar.Estilo = EstiloBoton.Peligro;
 
         // Izquierda: roles
         var barraRoles = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 48, WrapContents = false };
@@ -67,11 +67,14 @@ public sealed class UcRoles : UserControl
             Tema.AplicarGrilla(g);
             g.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             g.MultiSelect = false;
-            g.RowTemplate.Height = 30;
+            g.RowTemplate.Height = 36;
             g.SelectionChanged += (_, _) => ActualizarBotones();
         }
         _grdRoles.CellFormatting += GrdRoles_CellFormatting;
-        _grdPrivilegios.CellFormatting += GrdPrivilegios_CellFormatting;
+        Tema.ColumnaEstado(_grdPrivilegios, "TIPO", t => t switch { "ROL" => TipoEstado.Acento, "SISTEMA" => TipoEstado.Info, _ => TipoEstado.Advertencia });
+        Tema.ColumnaEstado(_grdPrivilegios, "CON_OPCION");
+        Tema.MensajeVacio(_grdRoles, "No hay roles propios. Cree uno con «Crear rol».", "");
+        Tema.MensajeVacio(_grdPrivilegios, "No tiene roles ni privilegios otorgados.", "");
 
         Controls.Add(division);
         Controls.Add(_lblPie);
@@ -184,12 +187,6 @@ public sealed class UcRoles : UserControl
             e.CellStyle.ForeColor = Tema.TextoSecundario;
     }
 
-    private void GrdPrivilegios_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
-    {
-        if (e.RowIndex < 0 || e.CellStyle is null || _grdPrivilegios.Columns[e.ColumnIndex].Name != "TIPO" || e.Value is not string tipo) return;
-        e.CellStyle.ForeColor = tipo switch { "ROL" => Tema.Acento, "SISTEMA" => Color.FromArgb(37, 99, 235), _ => Color.FromArgb(13, 148, 136) };
-        e.CellStyle.Font = new Font(Tema.Fuente, FontStyle.Bold);
-    }
 
     private void ActualizarBotones()
     {
@@ -264,17 +261,16 @@ public sealed class UcRoles : UserControl
     /// <summary>Pide un texto corto (nombre del rol).</summary>
     private string? Pedir(string titulo, string pregunta)
     {
-        using var f = new Form
+        using var f = new VentanaBase
         {
-            Text = titulo, Font = Tema.Fuente, BackColor = Tema.Superficie, FormBorderStyle = FormBorderStyle.FixedDialog,
+            Text = titulo, BackColor = Tema.Superficie, FormBorderStyle = FormBorderStyle.FixedDialog,
             StartPosition = FormStartPosition.CenterParent, MaximizeBox = false, MinimizeBox = false, ShowInTaskbar = false,
             ClientSize = new Size(420, 150)
         };
         var lbl = new Label { Text = pregunta, AutoSize = true, Location = new Point(20, 18) };
         var txt = new TextBox { CharacterCasing = CharacterCasing.Upper, Location = new Point(20, 46), Width = 380 };
-        var ok = new Button { Text = "Crear", DialogResult = DialogResult.OK, Location = new Point(290, 96), Size = new Size(110, 36), BackColor = Tema.Acento, ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
-        ok.FlatAppearance.BorderSize = 0;
-        var cancelar = new Button { Text = "Cancelar", DialogResult = DialogResult.Cancel, Location = new Point(170, 96), Size = new Size(110, 36) };
+        var ok = new BotonPlano { Text = "Crear", Estilo = EstiloBoton.Primario, DialogResult = DialogResult.OK, AutoSize = false, Location = new Point(290, 96), Size = new Size(110, 36) };
+        var cancelar = new BotonPlano { Text = "Cancelar", DialogResult = DialogResult.Cancel, AutoSize = false, Location = new Point(170, 96), Size = new Size(110, 36) };
         f.Controls.AddRange([lbl, txt, ok, cancelar]);
         f.AcceptButton = ok;
         f.CancelButton = cancelar;

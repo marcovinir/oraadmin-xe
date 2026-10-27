@@ -19,7 +19,7 @@ partial class UcDashboard
     {
         lblTitulo = new Label();
         lblDescripcion = new Label();
-        btnRefrescar = new Button();
+        btnRefrescar = new OraAdminXE.UI.BotonPlano();
         tlpTarjetas = new TableLayoutPanel();
         tarInstancia = new Tarjeta();
         tarActividad = new Tarjeta();
@@ -27,7 +27,7 @@ partial class UcDashboard
         tarRespaldo = new Tarjeta();
         lblTablespaces = new Label();
         lblLimite = new Label();
-        barLimite = new ProgressBar();
+        barLimite = new Panel();
         grdTablespaces = new DataGridView();
         tlpTarjetas.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)grdTablespaces).BeginInit();
@@ -53,12 +53,13 @@ partial class UcDashboard
         // btnRefrescar
         //
         btnRefrescar.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-        btnRefrescar.Cursor = Cursors.Hand;
+        btnRefrescar.AutoSize = false;
+        btnRefrescar.Icono = "";
         btnRefrescar.Location = new Point(946, 24);
         btnRefrescar.Name = "btnRefrescar";
         btnRefrescar.Size = new Size(130, 36);
         btnRefrescar.TabIndex = 0;
-        btnRefrescar.Text = "⟳  Refrescar";
+        btnRefrescar.Text = "Refrescar";
         btnRefrescar.Click += BtnRefrescar_Click;
         //
         // tlpTarjetas
@@ -128,8 +129,8 @@ partial class UcDashboard
         barLimite.Anchor = AnchorStyles.Top | AnchorStyles.Right;
         barLimite.Location = new Point(876, 240);
         barLimite.Name = "barLimite";
-        barLimite.Size = new Size(200, 8);
-        barLimite.Style = ProgressBarStyle.Continuous;
+        barLimite.Size = new Size(200, 6);
+        barLimite.Paint += BarLimite_Paint;
         //
         // grdTablespaces
         //
@@ -164,7 +165,7 @@ partial class UcDashboard
 
     private Label lblTitulo;
     private Label lblDescripcion;
-    private Button btnRefrescar;
+    private OraAdminXE.UI.BotonPlano btnRefrescar;
     private TableLayoutPanel tlpTarjetas;
     private Tarjeta tarInstancia;
     private Tarjeta tarActividad;
@@ -172,6 +173,6 @@ partial class UcDashboard
     private Tarjeta tarRespaldo;
     private Label lblTablespaces;
     private Label lblLimite;
-    private ProgressBar barLimite;
+    private Panel barLimite;
     private DataGridView grdTablespaces;
 }

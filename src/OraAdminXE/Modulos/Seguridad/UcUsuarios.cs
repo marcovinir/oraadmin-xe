@@ -24,20 +24,20 @@ public sealed class UcUsuarios : UserControl
         Padding = new Padding(16, 12, 16, 8);
         Font = Tema.Fuente;
 
-        _btnCrear = Tema.Boton("＋  Crear usuario", primario: true);
-        _btnClave = Tema.Boton("Contraseña…");
-        _btnCuota = Tema.Boton("Tablespace y cuota…");
-        _btnBloquear = Tema.Boton("Bloquear");
-        _btnDesbloquear = Tema.Boton("Desbloquear");
-        _btnExpirar = Tema.Boton("Expirar clave");
-        _btnEliminar = Tema.Boton("Eliminar");
-        _btnEliminar.ForeColor = Tema.Peligro;
-        _btnRefrescar = Tema.Boton("⟳  Refrescar");
+        _btnCrear = Tema.Boton("Crear usuario", primario: true, icono: "");
+        _btnClave = Tema.Boton("Contraseña…", icono: "");
+        _btnCuota = Tema.Boton("Cuota…", icono: "");
+        _btnBloquear = Tema.Boton("Bloquear", icono: "");
+        _btnDesbloquear = Tema.Boton("Desbloquear", icono: "");
+        _btnExpirar = Tema.Boton("Expirar clave", icono: "");
+        _btnEliminar = Tema.Boton("Eliminar", icono: "");
+        ((BotonPlano)_btnEliminar).Estilo = EstiloBoton.Peligro;
+        _btnRefrescar = Tema.Boton("Refrescar", icono: "");
 
         var izquierda = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false };
-        izquierda.Controls.AddRange([_btnCrear, _btnClave, _btnCuota, _btnBloquear, _btnDesbloquear, _btnExpirar]);
+        izquierda.Controls.AddRange([_btnCrear, _btnClave, _btnCuota, _btnBloquear, _btnDesbloquear, _btnExpirar, _btnEliminar]);
         var derecha = new FlowLayoutPanel { Dock = DockStyle.Right, AutoSize = true, FlowDirection = FlowDirection.RightToLeft, WrapContents = false };
-        derecha.Controls.AddRange([_btnRefrescar, _btnEliminar]);
+        derecha.Controls.AddRange([_btnRefrescar]);
         var barra = new Panel { Dock = DockStyle.Top, Height = 48 };
         barra.Controls.Add(izquierda);
         barra.Controls.Add(derecha);
@@ -45,7 +45,9 @@ public sealed class UcUsuarios : UserControl
         Tema.AplicarGrilla(_grilla);
         _grilla.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
         _grilla.MultiSelect = false;
-        _grilla.RowTemplate.Height = 30;
+        _grilla.RowTemplate.Height = 36;
+        Tema.ColumnaEstado(_grilla, "ACCOUNT_STATUS");
+        Tema.MensajeVacio(_grilla, "No hay usuarios propios todavía. Cree el primero con «Crear usuario».", "");
         _grilla.SelectionChanged += (_, _) => ActualizarBotones();
         _grilla.CellFormatting += Grilla_CellFormatting;
 
@@ -125,11 +127,6 @@ public sealed class UcUsuarios : UserControl
         if (e.RowIndex < 0 || _grilla.Rows[e.RowIndex].DataBoundItem is not DataRowView v || e.CellStyle is null) return;
         if (EsProtegido(v.Row))
             e.CellStyle.ForeColor = Tema.TextoSecundario;
-        if (_grilla.Columns[e.ColumnIndex].Name == "ACCOUNT_STATUS" && e.Value is string estado)
-        {
-            e.CellStyle.ForeColor = estado.Contains("LOCKED") ? Tema.Peligro : estado.Contains("EXPIRED") ? Tema.Advertencia : Tema.Ok;
-            e.CellStyle.Font = new Font(Tema.Fuente, FontStyle.Bold);
-        }
     }
 
     private static bool EsProtegido(DataRow fila) =>

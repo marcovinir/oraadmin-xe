@@ -32,8 +32,8 @@ partial class FrmLogin
         txtClave = new TextBox();
         lblAyuda = new Label();
         lblEstado = new Label();
-        btnConectar = new Button();
-        btnSalir = new Button();
+        btnConectar = new BotonPlano();
+        btnSalir = new BotonPlano();
         pnlEncabezado.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)numPuerto).BeginInit();
         SuspendLayout();
@@ -160,6 +160,7 @@ partial class FrmLogin
         //
         // btnSalir
         //
+        btnSalir.AutoSize = false;
         btnSalir.DialogResult = DialogResult.Cancel;
         btnSalir.Location = new Point(40, 440);
         btnSalir.Name = "btnSalir";
@@ -169,18 +170,15 @@ partial class FrmLogin
         //
         // btnConectar
         //
-        btnConectar.BackColor = Color.FromArgb(199, 70, 52);
-        btnConectar.Cursor = Cursors.Hand;
-        btnConectar.FlatAppearance.BorderSize = 0;
-        btnConectar.FlatStyle = FlatStyle.Flat;
+        btnConectar.AutoSize = false;
+        btnConectar.Estilo = EstiloBoton.Primario;
         btnConectar.Font = new Font("Segoe UI Semibold", 10.5F);
-        btnConectar.ForeColor = Color.White;
+        btnConectar.Icono = "";
         btnConectar.Location = new Point(220, 440);
         btnConectar.Name = "btnConectar";
         btnConectar.Size = new Size(200, 40);
         btnConectar.TabIndex = 6;
         btnConectar.Text = "Conectar";
-        btnConectar.UseVisualStyleBackColor = false;
         btnConectar.Click += BtnConectar_Click;
         //
         // FrmLogin
@@ -237,6 +235,6 @@ partial class FrmLogin
     private TextBox txtClave;
     private Label lblAyuda;
     private Label lblEstado;
-    private Button btnConectar;
-    private Button btnSalir;
+    private BotonPlano btnConectar;
+    private BotonPlano btnSalir;
 }
