@@ -134,7 +134,7 @@ oraadmin-xe/
 | Fecha | Hito | Qué tiene que estar listo |
 |---|---|---|
 | Lun 26 oct | 🏁 Arranque | Repo clonado y scripts corridos en las 4 máquinas, y cada quien prueba sus consultas en SQL Developer |
-| **Mar 27 oct** | **M1 · Base** | Capa de datos, diálogos y login en `main`: **nadie se queda bloqueado** |
+| **Mar 27 oct** | **M1 · Base** | Capa de datos, diálogos y login en `develop`: **nadie se queda bloqueado** |
 | **Jue 29 oct** | **M2 · Módulos funcionales** | Cada pantalla lista sus datos y ejecuta su acción principal |
 | **Vie 30 oct** | **M3 · Funcionalidad completa** | Todas las acciones del enunciado, con bitácora, confirmaciones y errores ORA. **Se congela la funcionalidad** |
 | Sáb 31 oct – Dom 1 nov | **M4 · Presentación** | Prueba en una máquina limpia o del laboratorio, manual de 4 páginas, release `v1.0` y dos ensayos |
@@ -144,7 +144,7 @@ El avance se sigue en el [**tablero del proyecto**](https://github.com/users/mar
 
 ## Cómo trabajamos
 
-Ramas `feature/<módulo>`, commits pequeños y Pull Requests revisados por otra persona antes de entrar a `main`. El detalle está en [**CONTRIBUTING.md**](CONTRIBUTING.md).
+Ramas `feature/<módulo>` que salen de **`develop`** (la rama de integración), commits pequeños y Pull Requests revisados por otra persona antes de entrar a `develop`. **`main` solo recibe la versión final** (`develop` → `main` + etiqueta `v1.0`). El detalle está en [**CONTRIBUTING.md**](CONTRIBUTING.md).
 
 ## Evaluación
 
