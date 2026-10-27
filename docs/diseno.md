@@ -118,7 +118,7 @@ public partial class UcTablespaces : ModuloBase
 | Pieza | Archivo | Estado |
 |---|---|---|
 | `IBaseDatos` (contrato) | `Datos/IBaseDatos.cs` | ✅ definido |
-| `BaseDatos` (implementación) | `Datos/BaseDatos.cs` | ⏳ #3 |
+| `BaseDatos` (implementación) | `Datos/BaseDatos.cs` | ✅ listo (#3) |
 | `Identificador` | `Datos/Identificador.cs` | ✅ listo |
 | `Dialogos` | `UI/Dialogos.cs` | ⏳ #4 |
 | `FrmLogin` | `UI/FrmLogin.cs` | ⏳ #5 |

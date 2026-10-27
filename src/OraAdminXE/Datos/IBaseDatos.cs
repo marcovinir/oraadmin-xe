@@ -31,7 +31,8 @@ public interface IBaseDatos
 
     /// <summary>
     /// DDL, DML o bloque PL/SQL. Registra SIEMPRE en la bitácora (OK o ERROR con el ORA completo)
-    /// y relanza la excepción si falla. Devuelve las filas afectadas.
+    /// y relanza la excepción si falla. Devuelve las filas afectadas. Las contraseñas de IDENTIFIED BY
+    /// se guardan enmascaradas en la bitácora y el «;» final se quita solo (salvo en PL/SQL).
     /// </summary>
     Task<int> EjecutarAsync(Modulo modulo, string accion, string sql, params OracleParameter[] parametros);
 
