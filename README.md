@@ -140,7 +140,7 @@ oraadmin-xe/
 | Sáb 31 oct – Dom 1 nov | **M4 · Presentación** | Prueba en una máquina limpia o del laboratorio, manual de 4 páginas, release `v1.0` y dos ensayos |
 | **Lun 2 nov** | 🎤 **Presentación** | — |
 
-El avance se sigue en las [**issues**](../../issues) y los [**milestones**](../../milestones). El punto de entrada es la issue **#1 · Hoja de ruta**.
+El avance se sigue en el [**tablero del proyecto**](https://github.com/users/marcovinir/projects/2), las [**issues**](../../issues) y los [**milestones**](../../milestones). El punto de entrada es la issue **#1 · Hoja de ruta**.
 
 ## Cómo trabajamos
 

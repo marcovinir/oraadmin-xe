@@ -76,6 +76,6 @@ Manual: sección de respaldos y recuperación (#26)
 
 - La issue **#1 · Hoja de ruta** es el punto de entrada: el orden, los milestones y quién hace qué.
 - Cada issue es **autosuficiente**: contexto, qué hacer, archivos, SQL de referencia y criterios de aceptación.
-- **Antes de empezar una issue, asígnatela** (*Assignees* → tu usuario) y muévela a *En progreso* si usamos el tablero.
+- **Antes de empezar una issue, asígnatela** (*Assignees* → tu usuario) y muévela a *🛠️ En progreso* en el [tablero](https://github.com/users/marcovinir/projects/2). Al abrir el PR pásala a *👀 En revisión*; al unirse queda en *✅ Hecho*.
 - Las etiquetas `persona-N` indican a quién le toca. Las `mod: …` indican el módulo y `prioridad: alta` lo que va primero.
 - Si encuentras un error o una idea nueva, abre una issue con la plantilla correspondiente. No lo dejes solo en el chat del grupo.
