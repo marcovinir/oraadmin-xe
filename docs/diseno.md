@@ -121,7 +121,7 @@ public partial class UcTablespaces : ModuloBase
 | `BaseDatos` (implementación) | `Datos/BaseDatos.cs` | ✅ listo (#3) |
 | `Identificador` | `Datos/Identificador.cs` | ✅ listo |
 | `Dialogos` + `DlgSql` + `Csv` | `UI/` | ✅ listo (#4) |
-| `FrmLogin` | `UI/FrmLogin.cs` | ⏳ #5 |
+| `FrmLogin` | `UI/FrmLogin.cs` | ✅ listo (#5) |
 | `FrmPrincipal` + menú | `UI/FrmPrincipal.cs` | ✅ listo |
 | `Tema` | `UI/Tema.cs` | ✅ listo |
 | Pantallas | `Modulos/*/Uc*.cs` | ⏳ una issue por módulo |
