@@ -1,0 +1,19 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  compilar-y-probar:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Compilar
+        run: dotnet build -c Release
+      - name: Pruebas (las de Oracle se omiten en CI)
+        run: dotnet test -c Release --no-build

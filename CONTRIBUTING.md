@@ -51,6 +51,18 @@ Manual: sección de respaldos y recuperación (#26)
 - Hay que llenar la plantilla, que incluye una lista de verificación.
 - **Antes de pedir revisión:** `main` actualizado y fusionado en la rama, compila sin errores y se probó con F5 contra Oracle.
 
+## Pruebas
+
+El proyecto `tests/OraAdminXE.Tests` (xUnit) tiene pruebas **unitarias** (sin BD) y **de integración** contra tu Oracle local. Las de integración se saltan solas si no defines la contraseña de `ADMIN_BD`:
+
+```bash
+set ORAADMIN_TEST_CLAVE=<clave de ADMIN_BD>
+set ORAADMIN_TEST_CLAVE_DEMO=<clave de DEMO_VENTAS>   # opcional
+dotnet test
+```
+
+En Visual Studio: *Prueba → Explorador de pruebas* (define las variables antes de abrir VS). GitHub Actions compila y corre las unitarias en cada PR; **un PR con el CI en rojo no se une**.
+
 ## Convenciones de código (C#)
 
 | Qué | Convención | Ejemplo |
