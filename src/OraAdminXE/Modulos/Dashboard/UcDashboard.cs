@@ -17,8 +17,14 @@ public partial class UcDashboard : ModuloBase
         InitializeComponent();
         Tema.AplicarGrilla(grdTablespaces);
         grdTablespaces.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-        grdTablespaces.RowTemplate.Height = 32;
+        grdTablespaces.RowTemplate.Height = 36;
+        Tema.ColumnaEstado(grdTablespaces, "STATUS");
+        Tema.ColumnaEstado(grdTablespaces, "AUTOEXTEND");
+        Tema.ColumnaEstado(grdTablespaces, "CONTENTS", _ => TipoEstado.Info);
+        Tema.MensajeVacio(grdTablespaces, "Sin datos de tablespaces", "");
     }
+
+    private double _pctLimite;
 
     public override Modulo Modulo => Modulo.General;
 
@@ -129,7 +135,22 @@ public partial class UcDashboard : ModuloBase
     {
         var pct = gb / SqlDashboard.LimiteXeGb * 100;
         lblLimite.Text = $"Datos de usuario: {gb:0.##} GB de {SqlDashboard.LimiteXeGb} GB permitidos en XE ({pct:0.#} %)";
-        barLimite.Value = (int)Math.Clamp(Math.Round(pct), 0, 100);
+        _pctLimite = Math.Clamp(pct, 0, 100);
+        barLimite.Invalidate();
+    }
+
+    private void BarLimite_Paint(object? sender, PaintEventArgs e)
+    {
+        e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+        var area = new Rectangle(0, 0, barLimite.Width - 1, barLimite.Height - 1);
+        using (var fondo = Tema.Redondeado(area, 3))
+        using (var pincel = new SolidBrush(Tema.SuperficieAlta))
+            e.Graphics.FillPath(pincel, fondo);
+        var lleno = (int)(area.Width * _pctLimite / 100);
+        if (lleno < 2) lleno = 2;
+        using var relleno = Tema.Redondeado(new Rectangle(0, 0, lleno, area.Height), 3);
+        using var color = new SolidBrush(ColorSemaforo(_pctLimite));
+        e.Graphics.FillPath(color, relleno);
     }
 
     /// <summary>Dibuja el % usado como una barra de color (verde, amarillo o rojo) con el número encima.</summary>
@@ -143,10 +164,15 @@ public partial class UcDashboard : ModuloBase
 
         var area = Rectangle.Inflate(e.CellBounds, -8, -9);
         area.Width -= 56;
-        using (var fondo = new SolidBrush(Tema.Fondo))
-            e.Graphics.FillRectangle(fondo, area);
-        using (var relleno = new SolidBrush(ColorSemaforo(pct)))
-            e.Graphics.FillRectangle(relleno, area.X, area.Y, (int)(area.Width * Math.Clamp(pct, 0, 100) / 100), area.Height);
+        area = new Rectangle(area.X, area.Y + area.Height / 2 - 4, area.Width, 8);
+        e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+        using (var fondo = Tema.Redondeado(area, 4))
+        using (var pincel = new SolidBrush(Tema.SuperficieAlta))
+            e.Graphics.FillPath(pincel, fondo);
+        var ancho = Math.Max(8, (int)(area.Width * Math.Clamp(pct, 0, 100) / 100));
+        using (var relleno = Tema.Redondeado(new Rectangle(area.X, area.Y, ancho, area.Height), 4))
+        using (var color = new SolidBrush(ColorSemaforo(pct)))
+            e.Graphics.FillPath(color, relleno);
 
         var texto = new Rectangle(area.Right + 6, e.CellBounds.Y, 50, e.CellBounds.Height);
         TextRenderer.DrawText(e.Graphics, $"{pct:0.0} %", Tema.Fuente, texto, Tema.Texto,

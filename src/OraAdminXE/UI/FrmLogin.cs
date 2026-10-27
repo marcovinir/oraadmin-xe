@@ -6,7 +6,7 @@ namespace OraAdminXE.UI;
 /// Pantalla de conexión: host, puerto, servicio, usuario y contraseña.
 /// Recuerda la última conexión en <c>conexion.json</c> (sin contraseña) y solo deja entrar a usuarios con rol DBA.
 /// </summary>
-public partial class FrmLogin : Form
+public partial class FrmLogin : VentanaBase
 {
     public FrmLogin()
     {

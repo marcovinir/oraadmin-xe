@@ -1,116 +1,104 @@
+using System.Drawing.Drawing2D;
 using OraAdminXE.Datos;
 using OraAdminXE.Modulos;
 
 namespace OraAdminXE.UI;
 
 /// <summary>
-/// Ventana principal: barra superior, menú lateral y panel donde se muestra el módulo activo.
+/// Ventana principal: menú lateral (logo, módulos y conexión activa) y el panel donde se muestra el módulo activo.
 /// Los módulos se registran en <see cref="RegistroModulos"/>; aquí no hay que tocar nada para agregar uno.
 /// </summary>
-public sealed class FrmPrincipal : Form
+public sealed class FrmPrincipal : VentanaBase
 {
-    private readonly Panel _menu = new();
-    private readonly Panel _contenido = new();
-    private readonly Label _lblConexion = new();
+    private readonly Panel _contenido = new() { Dock = DockStyle.Fill, BackColor = Tema.Fondo };
     private readonly Dictionary<string, ModuloBase> _abiertos = new();
-    private Button? _botonActivo;
+    private readonly List<ItemMenu> _items = [];
+    private ItemMenu? _activo;
     private ModuloBase? _moduloActivo;
 
     public FrmPrincipal()
     {
         Text = "OraAdmin XE — Consola DBA para Oracle 21c XE";
-        Font = Tema.Fuente;
-        BackColor = Tema.Fondo;
         MinimumSize = new Size(1100, 700);
         Size = new Size(1366, 820);
         StartPosition = FormStartPosition.CenterScreen;
 
-        _contenido.Dock = DockStyle.Fill;
-        _contenido.BackColor = Tema.Fondo;
-
         Controls.Add(_contenido);
         Controls.Add(CrearMenu());
-        Controls.Add(CrearBarraSuperior());
 
-        Shown += async (_, _) => await AbrirAsync(RegistroModulos.Todos[0], (Button)_menu.Controls[^1]);
+        Shown += async (_, _) => await AbrirAsync(_items[0]);
         FormClosing += (_, _) => _moduloActivo?.AlDesactivar();
-    }
-
-    private Control CrearBarraSuperior()
-    {
-        var barra = new Panel { Dock = DockStyle.Top, Height = 48, BackColor = Tema.Superficie };
-        barra.Paint += (_, e) => e.Graphics.DrawLine(new Pen(Tema.Borde), 0, barra.Height - 1, barra.Width, barra.Height - 1);
-
-        var titulo = new Label
-        {
-            Text = "OraAdmin XE",
-            Font = new Font("Segoe UI Semibold", 13f),
-            ForeColor = Tema.Acento,
-            AutoSize = true,
-            Location = new Point(16, 12)
-        };
-
-        _lblConexion.AutoSize = true;
-        _lblConexion.ForeColor = Tema.TextoSecundario;
-        _lblConexion.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-        _lblConexion.Text = string.IsNullOrEmpty(Sesion.Bd.Usuario)
-            ? "Sin conexión"
-            : $"● {Sesion.Bd.Usuario} @ {Sesion.Bd.Config.DataSource}";
-        barra.Resize += (_, _) => _lblConexion.Location = new Point(barra.Width - _lblConexion.Width - 16, 15);
-
-        barra.Controls.Add(titulo);
-        barra.Controls.Add(_lblConexion);
-        return barra;
     }
 
     private Control CrearMenu()
     {
-        _menu.Dock = DockStyle.Left;
-        _menu.Width = 230;
-        _menu.BackColor = Tema.MenuFondo;
-        _menu.Padding = new Padding(0, 12, 0, 0);
+        var menu = new Panel { Dock = DockStyle.Left, Width = 236, BackColor = Tema.MenuFondo };
+        menu.Paint += (_, e) =>
+        {
+            using var lapiz = new Pen(Tema.Borde);
+            e.Graphics.DrawLine(lapiz, menu.Width - 1, 0, menu.Width - 1, menu.Height);
+        };
 
+        var lista = new Panel { Dock = DockStyle.Fill, Padding = new Padding(12, 8, 13, 0), BackColor = Tema.MenuFondo };
         // Dock=Top apila al revés: se agregan del último al primero.
         foreach (var entrada in RegistroModulos.Todos.Reverse())
         {
-            var boton = new Button
-            {
-                Text = entrada.Titulo,
-                Padding = new Padding(52, 0, 0, 0),
-                Dock = DockStyle.Top,
-                Height = 44,
-                FlatStyle = FlatStyle.Flat,
-                TextAlign = ContentAlignment.MiddleLeft,
-                ForeColor = Tema.MenuTexto,
-                BackColor = Tema.MenuFondo,
-                Font = Tema.FuenteMenu,
-                Cursor = Cursors.Hand,
-                Tag = entrada
-            };
-            boton.FlatAppearance.BorderSize = 0;
-            boton.FlatAppearance.MouseOverBackColor = Tema.MenuHover;
-            // WinForms no dibuja emojis: el ícono se pinta aparte con la fuente de íconos de Windows.
-            boton.Paint += (_, e) => TextRenderer.DrawText(e.Graphics, entrada.Icono, Tema.FuenteIconos,
-                new Rectangle(18, 0, 24, boton.Height), boton.ForeColor, TextFormatFlags.VerticalCenter | TextFormatFlags.HorizontalCenter);
-            boton.Click += async (_, _) => await AbrirAsync(entrada, boton);
-            _menu.Controls.Add(boton);
+            var item = new ItemMenu(entrada) { Dock = DockStyle.Top };
+            item.Click += async (_, _) => await AbrirAsync(item);
+            lista.Controls.Add(item);
+            _items.Insert(0, item);
         }
-        return _menu;
+
+        menu.Controls.Add(lista);
+        menu.Controls.Add(CrearConexion());
+        menu.Controls.Add(CrearLogo());
+        return menu;
     }
 
-    private async Task AbrirAsync(EntradaModulo entrada, Button boton)
+    private static Control CrearLogo()
     {
-        if (_botonActivo is not null)
+        var logo = new Panel { Dock = DockStyle.Top, Height = 76, BackColor = Tema.MenuFondo };
+        logo.Paint += (_, e) =>
         {
-            _botonActivo.BackColor = Tema.MenuFondo;
-            _botonActivo.ForeColor = Tema.MenuTexto;
-        }
-        boton.BackColor = Tema.MenuActivo;
-        boton.ForeColor = Color.White;
-        _botonActivo = boton;
+            var g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            using (var ruta = Tema.Redondeado(new Rectangle(22, 22, 32, 32), 8))
+            using (var pincel = new SolidBrush(Tema.Acento))
+                g.FillPath(pincel, ruta);
+            TextRenderer.DrawText(g, "XE", Tema.FuenteNegrita, new Rectangle(22, 22, 32, 32), Color.White,
+                TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+            TextRenderer.DrawText(g, "OraAdmin", Tema.FuenteLogo, new Point(62, 21), Tema.Texto);
+            TextRenderer.DrawText(g, "Oracle 21c XE", Tema.FuentePequena, new Point(64, 43), Tema.TextoSecundario);
+        };
+        return logo;
+    }
+
+    private static Control CrearConexion()
+    {
+        var conexion = new Panel { Dock = DockStyle.Bottom, Height = 64, BackColor = Tema.MenuFondo };
+        var conectado = !string.IsNullOrEmpty(Sesion.Bd.Usuario);
+        conexion.Paint += (_, e) =>
+        {
+            var g = e.Graphics;
+            using (var lapiz = new Pen(Tema.Borde)) g.DrawLine(lapiz, 12, 0, conexion.Width - 13, 0);
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            using (var punto = new SolidBrush(conectado ? Tema.Ok : Tema.Peligro)) g.FillEllipse(punto, 24, 19, 8, 8);
+            TextRenderer.DrawText(g, conectado ? Sesion.Bd.Usuario : "Sin conexión", Tema.FuenteNegrita, new Point(40, 14), Tema.Texto);
+            if (conectado)
+                TextRenderer.DrawText(g, Sesion.Bd.Config.DataSource, Tema.FuentePequena, new Point(40, 35), Tema.TextoSecundario);
+        };
+        return conexion;
+    }
+
+    private async Task AbrirAsync(ItemMenu item)
+    {
+        if (_activo is not null) _activo.Activo = false;
+        item.Activo = true;
+        _activo = item;
 
         _moduloActivo?.AlDesactivar();
 
+        var entrada = item.Entrada;
         if (!_abiertos.TryGetValue(entrada.Titulo, out var modulo))
         {
             modulo = entrada.Crear();
@@ -130,6 +118,49 @@ public sealed class FrmPrincipal : Form
         catch (NotImplementedException)
         {
             // Módulo aún en construcción: se muestra su pantalla vacía.
+        }
+    }
+
+    /// <summary>Opción del menú lateral: ícono, texto y fondo redondeado al pasar el mouse o estar activa.</summary>
+    private sealed class ItemMenu : Control
+    {
+        private bool _encima;
+        private bool _activo;
+
+        public ItemMenu(EntradaModulo entrada)
+        {
+            Entrada = entrada;
+            Text = entrada.Titulo;
+            Height = 42;
+            Cursor = Cursors.Hand;
+            Font = Tema.FuenteMenu;
+            BackColor = Tema.MenuFondo;
+            SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
+        }
+
+        public EntradaModulo Entrada { get; }
+
+        public bool Activo { get => _activo; set { _activo = value; Invalidate(); } }
+
+        protected override void OnMouseEnter(EventArgs e) { _encima = true; Invalidate(); base.OnMouseEnter(e); }
+        protected override void OnMouseLeave(EventArgs e) { _encima = false; Invalidate(); base.OnMouseLeave(e); }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            var g = e.Graphics;
+            g.Clear(Tema.MenuFondo);
+            if (_activo || _encima)
+            {
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                using var ruta = Tema.Redondeado(new Rectangle(0, 3, Width - 1, Height - 7), 8);
+                using var pincel = new SolidBrush(_activo ? Tema.AcentoSuave : Tema.MenuHover);
+                g.FillPath(pincel, ruta);
+            }
+            var color = _activo ? Tema.AcentoTexto : _encima ? Tema.Texto : Tema.TextoSecundario;
+            TextRenderer.DrawText(g, Entrada.Icono, Tema.FuenteIconos, new Rectangle(8, 0, 28, Height), color,
+                TextFormatFlags.VerticalCenter | TextFormatFlags.HorizontalCenter);
+            TextRenderer.DrawText(g, Text, _activo ? Tema.FuenteMenuActiva : Font, new Rectangle(44, 0, Width - 48, Height), color,
+                TextFormatFlags.VerticalCenter | TextFormatFlags.Left);
         }
     }
 }

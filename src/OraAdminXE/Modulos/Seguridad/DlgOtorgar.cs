@@ -3,7 +3,7 @@ using OraAdminXE.UI;
 namespace OraAdminXE.Modulos.Seguridad;
 
 /// <summary>Diálogo para otorgar a un usuario o rol: un rol, un privilegio de sistema o privilegios sobre una tabla.</summary>
-public sealed class DlgOtorgar : Form
+public sealed class DlgOtorgar : VentanaBase
 {
     private readonly string _beneficiario;
     private readonly Func<string, Task<string[]>> _tablasDe;
@@ -28,7 +28,6 @@ public sealed class DlgOtorgar : Form
         _beneficiario = beneficiario;
         _tablasDe = tablasDe;
         Text = $"Otorgar a {beneficiario}";
-        Font = Tema.Fuente;
         BackColor = Tema.Superficie;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         StartPosition = FormStartPosition.CenterParent;
@@ -58,10 +57,9 @@ public sealed class DlgOtorgar : Form
         _tabla.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110));
         _tabla.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
 
-        var btnAceptar = new Button { Text = "Otorgar", AutoSize = true, MinimumSize = new Size(110, 36), BackColor = Tema.Acento, ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
-        btnAceptar.FlatAppearance.BorderSize = 0;
+        var btnAceptar = new BotonPlano { Text = "Otorgar", Estilo = EstiloBoton.Primario, MinimumSize = new Size(110, 36) };
         btnAceptar.Click += (_, _) => Aceptar();
-        var btnCancelar = new Button { Text = "Cancelar", AutoSize = true, MinimumSize = new Size(110, 36), DialogResult = DialogResult.Cancel };
+        var btnCancelar = new BotonPlano { Text = "Cancelar", MinimumSize = new Size(110, 36), DialogResult = DialogResult.Cancel };
         var pie = new FlowLayoutPanel { FlowDirection = FlowDirection.RightToLeft, Size = new Size(470, 64), Padding = new Padding(16, 8, 16, 16) };
         pie.Controls.AddRange([btnAceptar, btnCancelar]);
 

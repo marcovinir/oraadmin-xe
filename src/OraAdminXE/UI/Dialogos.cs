@@ -53,7 +53,8 @@ public static class Dialogos
         switch (ex)
         {
             case ArgumentException or InvalidOperationException:
-                MessageBox.Show(duenio, ex.Message, "Revise los datos", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                using (var aviso = new DlgSql(DlgSql.Modo.Aviso, "Revise los datos", ex.Message))
+                    aviso.ShowDialog(duenio);
                 return;
 
             case OracleException ora:
@@ -75,9 +76,8 @@ public static class Dialogos
         }
     }
 
-    /// <summary>Mensaje de éxito breve.</summary>
-    public static void Exito(IWin32Window? duenio, string mensaje) =>
-        MessageBox.Show(duenio, mensaje, "OraAdmin XE", MessageBoxButtons.OK, MessageBoxIcon.Information);
+    /// <summary>Aviso de éxito breve: aparece abajo a la derecha y se va solo (no bloquea).</summary>
+    public static void Exito(IWin32Window? duenio, string mensaje) => Toast.Mostrar(duenio, mensaje, TipoEstado.Ok);
 
     /// <summary>
     /// Pregunta dónde guardar y exporta la tabla a CSV (UTF-8 con BOM y «;» para que Excel respete los acentos).

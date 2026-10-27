@@ -3,7 +3,7 @@ using OraAdminXE.UI;
 namespace OraAdminXE.Modulos.Seguridad;
 
 /// <summary>Diálogo para crear un usuario, cambiar su contraseña o su tablespace y cuota.</summary>
-public sealed class DlgUsuario : Form
+public sealed class DlgUsuario : VentanaBase
 {
     public enum Modo { Crear, Clave, Tablespace }
 
@@ -30,7 +30,6 @@ public sealed class DlgUsuario : Form
     {
         _modo = modo;
         Text = modo switch { Modo.Crear => "Crear usuario", Modo.Clave => $"Cambiar contraseña de {usuario}", _ => $"Tablespace y cuota de {usuario}" };
-        Font = Tema.Fuente;
         BackColor = Tema.Superficie;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         StartPosition = FormStartPosition.CenterParent;
@@ -76,9 +75,8 @@ public sealed class DlgUsuario : Form
         tabla.Controls.Add(new Label());
         tabla.Controls.Add(_lblError);
 
-        var btnAceptar = new Button { Text = modo == Modo.Crear ? "Crear" : "Guardar", AutoSize = true, MinimumSize = new Size(110, 36), BackColor = Tema.Acento, ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
-        btnAceptar.FlatAppearance.BorderSize = 0;
-        var btnCancelar = new Button { Text = "Cancelar", AutoSize = true, MinimumSize = new Size(110, 36), DialogResult = DialogResult.Cancel };
+        var btnAceptar = new BotonPlano { Text = modo == Modo.Crear ? "Crear" : "Guardar", Estilo = EstiloBoton.Primario, MinimumSize = new Size(110, 36) };
+        var btnCancelar = new BotonPlano { Text = "Cancelar", MinimumSize = new Size(110, 36), DialogResult = DialogResult.Cancel };
         btnAceptar.Click += (_, _) => Aceptar();
         var pie = new FlowLayoutPanel { FlowDirection = FlowDirection.RightToLeft, Dock = DockStyle.Bottom, AutoSize = true, Padding = new Padding(16, 8, 16, 16) };
         pie.Controls.AddRange([btnAceptar, btnCancelar]);

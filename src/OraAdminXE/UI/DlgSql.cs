@@ -4,16 +4,16 @@ namespace OraAdminXE.UI;
 /// Diálogo común para mostrar una sentencia SQL (con o sin pedir confirmación) o el detalle de un error.
 /// Se usa a través de <see cref="Dialogos"/>; las pantallas no lo crean directamente.
 /// </summary>
-public sealed class DlgSql : Form
+public sealed class DlgSql : VentanaBase
 {
-    public enum Modo { Confirmar, Ver, Error }
+    public enum Modo { Confirmar, Ver, Error, Aviso }
 
     private readonly TextBox _txtDetalle = new();
     private Control? _foco;
 
     public DlgSql(Modo modo, string titulo, string detalle, string? aviso = null, bool destructiva = false)
     {
-        Text = modo == Modo.Error ? "Error" : titulo;
+        Text = modo switch { Modo.Error => "Error", Modo.Aviso => "Revise los datos", _ => titulo };
         Font = Tema.Fuente;
         BackColor = Tema.Superficie;
         StartPosition = FormStartPosition.CenterParent;
@@ -21,16 +21,16 @@ public sealed class DlgSql : Form
         MinimizeBox = false;
         ShowInTaskbar = false;
         MinimumSize = new Size(520, 300);
-        Size = new Size(760, modo == Modo.Error ? 340 : 420);
+        Size = modo == Modo.Aviso ? new Size(560, 260) : new Size(760, modo == Modo.Error ? 340 : 420);
 
-        var colorAviso = modo == Modo.Error || destructiva ? Tema.Peligro : Tema.Acento;
+        var colorAviso = modo == Modo.Error || destructiva ? Tema.Peligro : modo == Modo.Aviso ? Tema.Advertencia : Tema.Acento;
 
         var encabezado = new Panel { Dock = DockStyle.Top, Height = aviso is null ? 56 : 84, Padding = new Padding(20, 14, 20, 6) };
         var lblTitulo = new Label
         {
             Text = titulo,
             Font = new Font("Segoe UI Semibold", 13f),
-            ForeColor = modo == Modo.Error ? Tema.Peligro : Tema.Texto,
+            ForeColor = modo switch { Modo.Error => Tema.Peligro, Modo.Aviso => Tema.Advertencia, _ => Tema.Texto },
             AutoSize = true,
             Dock = DockStyle.Top
         };
@@ -45,8 +45,9 @@ public sealed class DlgSql : Form
         _txtDetalle.Multiline = true;
         _txtDetalle.ReadOnly = true;
         _txtDetalle.ScrollBars = ScrollBars.Both;
-        _txtDetalle.WordWrap = modo == Modo.Error;
-        _txtDetalle.Font = Tema.FuenteCodigo;
+        _txtDetalle.WordWrap = modo is Modo.Error or Modo.Aviso;
+        _txtDetalle.ScrollBars = modo == Modo.Aviso ? ScrollBars.None : ScrollBars.Both;
+        _txtDetalle.Font = modo == Modo.Aviso ? Tema.Fuente : Tema.FuenteCodigo;
         _txtDetalle.BackColor = Tema.Fondo;
         _txtDetalle.BorderStyle = BorderStyle.FixedSingle;
         _txtDetalle.Dock = DockStyle.Fill;
@@ -66,11 +67,8 @@ public sealed class DlgSql : Form
 
         if (modo == Modo.Confirmar)
         {
-            var btnEjecutar = Boton(destructiva ? "Ejecutar de todos modos" : "Ejecutar", DialogResult.OK);
-            btnEjecutar.BackColor = colorAviso;
-            btnEjecutar.ForeColor = Color.White;
-            btnEjecutar.FlatStyle = FlatStyle.Flat;
-            btnEjecutar.FlatAppearance.BorderSize = 0;
+            var btnEjecutar = Boton(destructiva ? "Ejecutar de todos modos" : "Ejecutar", DialogResult.OK,
+                destructiva ? EstiloBoton.Peligro : EstiloBoton.Primario, destructiva ? "" : "");
             var btnCancelar = Boton("Cancelar", DialogResult.Cancel);
             pie.Controls.Add(btnEjecutar);
             pie.Controls.Add(btnCancelar);
@@ -88,13 +86,17 @@ public sealed class DlgSql : Form
             _foco = btnCerrar;
         }
 
-        var btnCopiar = Boton(modo == Modo.Error ? "Copiar detalle" : "Copiar SQL", DialogResult.None);
-        btnCopiar.Click += (_, _) =>
+        if (modo != Modo.Aviso)
         {
-            Clipboard.SetText(_txtDetalle.Text);
-            btnCopiar.Text = "✓ Copiado";
-        };
-        pie.Controls.Add(btnCopiar);
+            var btnCopiar = Boton(modo == Modo.Error ? "Copiar detalle" : "Copiar SQL", DialogResult.None, EstiloBoton.Fantasma, "");
+            btnCopiar.Click += (_, _) =>
+            {
+                Clipboard.SetText(_txtDetalle.Text);
+                btnCopiar.Text = "Copiado";
+                btnCopiar.Icono = "";
+            };
+            pie.Controls.Add(btnCopiar);
+        }
 
         Controls.Add(cuerpo);
         Controls.Add(pie);
@@ -104,14 +106,13 @@ public sealed class DlgSql : Form
         Shown += (_, _) => _foco?.Focus();
     }
 
-    private static Button Boton(string texto, DialogResult resultado) => new()
+    private static BotonPlano Boton(string texto, DialogResult resultado, EstiloBoton estilo = EstiloBoton.Secundario, string? icono = null) => new()
     {
         Text = texto,
         DialogResult = resultado,
-        AutoSize = true,
+        Estilo = estilo,
+        Icono = icono,
         MinimumSize = new Size(110, 36),
-        Padding = new Padding(10, 0, 10, 0),
-        Margin = new Padding(8, 0, 0, 0),
-        Cursor = Cursors.Hand
+        Margin = new Padding(8, 0, 0, 0)
     };
 }
