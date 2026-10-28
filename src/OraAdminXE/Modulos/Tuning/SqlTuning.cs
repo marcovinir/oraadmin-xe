@@ -41,4 +41,40 @@ public static class SqlTuning
 
     /// <summary>Texto completo de una sentencia (SQL_TEXT solo trae los primeros 1000 caracteres).</summary>
     public const string TextoCompleto = "SELECT sql_fulltext FROM v$sqlarea WHERE sql_id = :id FETCH FIRST 1 ROWS ONLY";
+
+    // ------------------------------------------------------------------ estadísticas e índices (issue #22)
+
+    /// <summary>Esquemas de usuario (los que no son de Oracle), para los combos de esquema.</summary>
+    public const string Esquemas = "SELECT username FROM dba_users WHERE oracle_maintained = 'N' ORDER BY username";
+
+    public const string TablasDe = "SELECT table_name FROM dba_tables WHERE owner = :e ORDER BY table_name";
+
+    public const string ColumnasDe =
+        "SELECT column_name FROM dba_tab_columns WHERE owner = :e AND table_name = :t ORDER BY column_id";
+
+    /// <summary>Estadísticas de las tablas de un esquema. LAST_ANALYZED vacío o STALE_STATS = YES se resalta.</summary>
+    public const string Estadisticas = """
+        SELECT table_name, num_rows, blocks, avg_row_len, last_analyzed, stale_stats
+        FROM dba_tab_statistics
+        WHERE owner = :e AND object_type = 'TABLE'
+        ORDER BY table_name
+        """;
+
+    /// <summary>
+    /// Índices de un esquema con sus columnas en orden. RESPALDA dice «PK/UK» cuando el índice sostiene una
+    /// restricción P o U (DBA_CONSTRAINTS.INDEX_NAME, aunque el índice se llame distinto): esos no se pueden eliminar desde la app.
+    /// </summary>
+    public const string Indices = """
+        SELECT x.index_name, x.table_name, x.uniqueness, x.status, x.blevel, x.distinct_keys, x.columnas,
+               CASE WHEN EXISTS (SELECT 1 FROM dba_constraints c
+                                 WHERE c.index_owner = :e AND c.index_name = x.index_name
+                                   AND c.constraint_type IN ('P', 'U')) THEN 'PK/UK' END AS respalda
+        FROM (SELECT i.index_name, i.table_name, i.uniqueness, i.status, i.blevel, i.distinct_keys,
+                     LISTAGG(c.column_name, ', ') WITHIN GROUP (ORDER BY c.column_position) AS columnas
+              FROM dba_indexes i
+              JOIN dba_ind_columns c ON c.index_owner = i.owner AND c.index_name = i.index_name
+              WHERE i.owner = :e
+              GROUP BY i.index_name, i.table_name, i.uniqueness, i.status, i.blevel, i.distinct_keys) x
+        ORDER BY x.table_name, x.index_name
+        """;
 }
