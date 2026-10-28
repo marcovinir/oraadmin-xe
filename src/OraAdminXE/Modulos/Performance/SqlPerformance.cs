@@ -1,6 +1,6 @@
 namespace OraAdminXE.Modulos.Performance;
 
-/// <summary>Consultas de Performance: Sesiones, bloqueos, matar sesión y métricas en vivo (issues #23, #24).</summary>
+/// <summary>Consultas de Performance: Sesiones, bloqueos, matar sesión, métricas en vivo, esperas y memoria (issues #23, #24, #25).</summary>
 public static class SqlPerformance
 {
     /// <summary>
@@ -73,4 +73,58 @@ public static class SqlPerformance
 
     /// <summary>Borra todo el historial de snapshots (en cascada borra valor_metrica, issue #24).</summary>
     public const string BorrarHistorial = "DELETE FROM admin_bd.snapshot";
+
+    /// <summary>Top 10 eventos de espera sin clase Idle (issue #25).</summary>
+    public const string EventosEspera = """
+        SELECT event, wait_class, total_waits, ROUND(time_waited_micro / 1000000, 2) AS seg
+        FROM v$system_event
+        WHERE wait_class <> 'Idle'
+        ORDER BY time_waited_micro DESC
+        FETCH FIRST 10 ROWS ONLY
+        """;
+
+    /// <summary>Genera la consulta del Top 10 SQL ordenado por el criterio indicado (issue #25).</summary>
+    public static string SqlTopSql(string criterio)
+    {
+        var columna = criterio switch
+        {
+            "cpu_time" => "cpu_time",
+            "buffer_gets" => "buffer_gets",
+            "disk_reads" => "disk_reads",
+            _ => "elapsed_time"
+        };
+
+        return $"""
+            SELECT sql_id, executions, ROUND(elapsed_time / 1000000, 2) AS seg,
+                   ROUND(cpu_time / 1000000, 2) AS cpu_seg,
+                   buffer_gets, disk_reads, SUBSTR(sql_text, 1, 120) AS texto
+            FROM v$sqlarea
+            ORDER BY {columna} DESC
+            FETCH FIRST 10 ROWS ONLY
+            """;
+    }
+
+    /// <summary>Componentes de la SGA en megabytes (issue #25).</summary>
+    public const string SgaInfo = """
+        SELECT name, ROUND(bytes / 1048576) AS mb, resizeable
+        FROM v$sgainfo
+        ORDER BY bytes DESC
+        """;
+
+    /// <summary>Estadísticas clave de la PGA en megabytes (issue #25).</summary>
+    public const string PgaStat = """
+        SELECT name, ROUND(value / 1048576) AS mb
+        FROM v$pgastat
+        WHERE name IN ('total PGA allocated', 'total PGA inuse', 'maximum PGA allocated')
+        """;
+
+    /// <summary>Operaciones largas activas en curso (issue #25).</summary>
+    public const string OperacionesLargas = """
+        SELECT sid, opname, target, sofar, totalwork,
+               ROUND(sofar / NULLIF(totalwork, 0) * 100) AS pct,
+               time_remaining
+        FROM v$session_longops
+        WHERE totalwork > 0 AND sofar < totalwork
+        ORDER BY time_remaining DESC NULLS LAST
+        """;
 }
