@@ -10,8 +10,12 @@ namespace OraAdminXE.Modulos.Tablespaces;
 /// </summary>
 public partial class UcTablespaces : ModuloBase
 {
+    private const long Mb = 1024L * 1024L;
     private readonly SemaphoreSlim _cargaArchivos = new(1, 1);
+    private readonly HashSet<string> _privilegios = new(StringComparer.OrdinalIgnoreCase);
     private bool _cargando;
+    private bool _operacion;
+    private bool _enXepdb1;
     private int _solicitudArchivos;
     private string? _tablespaceSeleccionado;
 
@@ -30,6 +34,17 @@ public partial class UcTablespaces : ModuloBase
         grdTablespaces.CellPainting += GrdUso_CellPainting;
         grdArchivos.CellPainting += GrdUso_CellPainting;
         grdArchivos.CellToolTipTextNeeded += GrdArchivos_CellToolTipTextNeeded;
+        grdArchivos.SelectionChanged += (_, _) => ActualizarAcciones();
+        btnCrear.Click += async (_, _) => await CrearAsync();
+        btnAgregarArchivo.Click += async (_, _) => await AgregarDatafileAsync();
+        btnRedimensionar.Click += async (_, _) => await RedimensionarAsync();
+        btnAutoextend.Click += async (_, _) => await AutoextendAsync();
+        btnOffline.Click += async (_, _) => await CambiarEstadoAsync(EstadoTablespace.Offline);
+        btnOnline.Click += async (_, _) => await CambiarEstadoAsync(EstadoTablespace.Online);
+        btnSoloLectura.Click += async (_, _) => await CambiarEstadoAsync(EstadoTablespace.SoloLectura);
+        btnLecturaEscritura.Click += async (_, _) => await CambiarEstadoAsync(EstadoTablespace.LecturaEscritura);
+        btnEliminar.Click += async (_, _) => await EliminarAsync();
+        ActualizarAcciones();
     }
 
     public override Modulo Modulo => Modulo.Tablespaces;
@@ -55,8 +70,12 @@ public partial class UcTablespaces : ModuloBase
         Tema.Cargando(grdTablespaces, true);
         try
         {
-            var tabla = await Bd.ConsultarAsync(SqlTablespaces.Uso);
+            var uso = Bd.ConsultarAsync(SqlTablespaces.Uso);
+            var privilegios = Bd.ConsultarAsync(SqlTablespaces.PrivilegiosSesion);
+            await Task.WhenAll(uso, privilegios);
             if (!PuedeActualizarUi) return;
+            CargarPrivilegios(privilegios.Result);
+            var tabla = uso.Result;
             MostrarTablespaces(tabla);
 
             var seleccionado = RestaurarSeleccion(tabla, seleccionAnterior);
@@ -81,6 +100,7 @@ public partial class UcTablespaces : ModuloBase
                 Tema.Cargando(grdTablespaces, false);
                 btnRefrescar.Enabled = true;
                 UseWaitCursor = false;
+                ActualizarAcciones();
             }
             _cargando = false;
         }
@@ -89,6 +109,7 @@ public partial class UcTablespaces : ModuloBase
     private void GrdTablespaces_SelectionChanged(object? sender, EventArgs e)
     {
         if (_cargando || !PuedeActualizarUi) return;
+        ActualizarAcciones();
 
         var tablespace = TablespaceSeleccionado();
         if (tablespace is null || tablespace == _tablespaceSeleccionado) return;
@@ -126,10 +147,301 @@ public partial class UcTablespaces : ModuloBase
         finally
         {
             if (PuedeActualizarUi && solicitud == _solicitudArchivos)
+            {
                 Tema.Cargando(grdArchivos, false);
+                ActualizarAcciones();
+            }
             _cargaArchivos.Release();
         }
     }
+
+    private async Task CrearAsync()
+    {
+        try
+        {
+            await AsegurarPrivilegiosAsync("CREATE TABLESPACE");
+            var directorio = await DirectorioPdbAsync();
+            using var dlg = new DlgTablespace(await SugerirRutaLibreAsync(directorio, "TS_VENTAS", 1), directorio);
+            if (dlg.ShowDialog(this) != DialogResult.OK) return;
+
+            var nombre = DdlTablespaces.ValidarNombre(dlg.Nombre);
+            var ruta = await ValidarRutaNuevaAsync(dlg.Ruta, directorio);
+            var existente = await Bd.ConsultarAsync(SqlTablespaces.MetadatosTablespace, Parametro.De("tablespace", nombre));
+            if (existente.Rows.Count != 0) throw new ArgumentException($"El tablespace {nombre} ya existe.");
+            var sql = DdlTablespaces.Crear(nombre, ruta, dlg.InicialMb, dlg.Autoextend, dlg.NextMb, dlg.MaxMb);
+            await EjecutarDdlAsync("Crear tablespace", "Crear tablespace", sql, false, $"Tablespace {nombre} creado.", () => DdlTablespaces.RegistrarCreadoEnSesion(nombre));
+        }
+        catch (Exception ex) { Dialogos.Error(this, ex); }
+    }
+
+    private async Task AgregarDatafileAsync()
+    {
+        try
+        {
+            var seleccionado = CapturarTablespace();
+            await AsegurarPrivilegiosAsync("ALTER TABLESPACE");
+            var meta = await RevalidarTablespaceAsync(seleccionado.Nombre);
+            AsegurarElegible(meta, requiereOnline: true);
+            if (meta.Bigfile) throw new InvalidOperationException("Los tablespaces BIGFILE no admiten ADD DATAFILE.");
+            var directorio = await DirectorioPdbAsync();
+            using var dlg = new DlgDatafile(ModoDatafile.Agregar, await SugerirRutaLibreAsync(directorio, meta.Nombre, 2), 20);
+            if (dlg.ShowDialog(this) != DialogResult.OK) return;
+
+            meta = await RevalidarTablespaceAsync(meta.Nombre);
+            AsegurarElegible(meta, requiereOnline: true);
+            if (meta.Bigfile) throw new InvalidOperationException("El tablespace cambió a BIGFILE; no se agrega un datafile.");
+            var ruta = await ValidarRutaNuevaAsync(dlg.Ruta, directorio);
+            await EjecutarDdlAsync("Agregar datafile", "Agregar datafile", DdlTablespaces.AgregarDatafile(meta.Nombre, ruta, dlg.TamanoMb), false, "Datafile agregado.");
+        }
+        catch (Exception ex) { Dialogos.Error(this, ex); }
+    }
+
+    private async Task RedimensionarAsync()
+    {
+        try
+        {
+            var seleccionado = CapturarDatafile();
+            await AsegurarPrivilegiosAsync("ALTER DATABASE");
+            await AsegurarArchivosManualesAsync();
+            var meta = await RevalidarDatafileAsync(seleccionado);
+            AsegurarDatafileElegible(meta);
+            using var dlg = new DlgDatafile(ModoDatafile.Redimensionar, meta.Ruta, ARedondearMb(meta.Bytes));
+            if (dlg.ShowDialog(this) != DialogResult.OK) return;
+
+            meta = await RevalidarDatafileAsync(seleccionado);
+            AsegurarDatafileElegible(meta);
+            var aviso = dlg.TamanoMb < ARedondearMb(meta.Bytes)
+                ? "-- Advertencia: Oracle puede rechazar la reducción si hay extensiones por encima del nuevo límite.\r\n"
+                : "";
+            await EjecutarDdlAsync("Redimensionar datafile", "Redimensionar datafile", aviso + DdlTablespaces.RedimensionarDatafile(meta.Ruta, dlg.TamanoMb), false, "Datafile redimensionado.");
+        }
+        catch (Exception ex) { Dialogos.Error(this, ex); }
+    }
+
+    private async Task AutoextendAsync()
+    {
+        try
+        {
+            var seleccionado = CapturarDatafile();
+            await AsegurarPrivilegiosAsync("ALTER DATABASE");
+            await AsegurarArchivosManualesAsync();
+            var meta = await RevalidarDatafileAsync(seleccionado);
+            AsegurarDatafileElegible(meta);
+            var actual = ARedondearMb(meta.Bytes);
+            using var dlg = new DlgDatafile(ModoDatafile.Autoextend, meta.Ruta, actual,
+                Math.Max(actual + 1, ARedondearMb(meta.MaxBytes)), Math.Max(1, ARedondearMb(meta.IncrementoBytes)));
+            if (dlg.ShowDialog(this) != DialogResult.OK) return;
+
+            meta = await RevalidarDatafileAsync(seleccionado);
+            AsegurarDatafileElegible(meta);
+            await EjecutarDdlAsync("Configurar autoextend", "Configurar autoextend",
+                DdlTablespaces.CambiarAutoextend(meta.Ruta, dlg.Autoextend, ARedondearMb(meta.Bytes), dlg.NextMb, dlg.MaxMb), false, "Autoextend actualizado.");
+        }
+        catch (Exception ex) { Dialogos.Error(this, ex); }
+    }
+
+    private async Task CambiarEstadoAsync(EstadoTablespace destino)
+    {
+        try
+        {
+            var seleccionado = CapturarTablespace();
+            await AsegurarPrivilegiosAsync("ALTER TABLESPACE", "MANAGE TABLESPACE");
+            var meta = await RevalidarTablespaceAsync(seleccionado.Nombre);
+            AsegurarElegible(meta, requiereOnline: false);
+            if (!DdlTablespaces.TransicionValida(meta.Estado, destino))
+                throw new InvalidOperationException($"No se permite pasar de {meta.Estado} a {destino}.");
+            await EjecutarDdlAsync("Cambiar estado de tablespace", "Cambiar estado de tablespace", DdlTablespaces.CambiarEstado(meta.Nombre, destino), false, "Estado actualizado.");
+        }
+        catch (Exception ex) { Dialogos.Error(this, ex); }
+    }
+
+    private async Task EliminarAsync()
+    {
+        try
+        {
+            var seleccionado = CapturarTablespace();
+            await AsegurarPrivilegiosAsync("DROP TABLESPACE");
+            var meta = await RevalidarTablespaceAsync(seleccionado.Nombre);
+            var dependencias = await DependenciasEliminarAsync(meta.Nombre);
+            AsegurarEliminable(meta, dependencias);
+            using var dlg = new DlgEliminarTablespace(meta.Nombre);
+            if (dlg.ShowDialog(this) != DialogResult.OK) return;
+
+            // Revalidación inmediatamente antes del preview/DDL: la selección no puede redirigir DROP.
+            meta = await RevalidarTablespaceAsync(meta.Nombre);
+            dependencias = await DependenciasEliminarAsync(meta.Nombre);
+            AsegurarEliminable(meta, dependencias);
+            await EjecutarDdlAsync("Eliminar tablespace", "Eliminar tablespace", DdlTablespaces.Eliminar(meta.Nombre), true,
+                $"Tablespace {meta.Nombre} eliminado.", () => DdlTablespaces.OlvidarCreadoEnSesion(meta.Nombre));
+        }
+        catch (Exception ex) { Dialogos.Error(this, ex); }
+    }
+
+    private async Task EjecutarDdlAsync(string accion, string titulo, string sql, bool destructiva, string exito, Action? despuesDeExito = null)
+    {
+        if (!Dialogos.ConfirmarSql(this, titulo, sql, destructiva)) return;
+        _operacion = true;
+        ActualizarAcciones();
+        UseWaitCursor = true;
+        try
+        {
+            await Bd.EjecutarAsync(Modulo, accion, sql);
+            despuesDeExito?.Invoke();
+            Dialogos.Exito(this, exito);
+        }
+        catch (Exception ex) { Dialogos.Error(this, ex); }
+        finally
+        {
+            UseWaitCursor = false;
+            _operacion = false;
+            // DDL es commit implícito; incluso ante error se releen metadatos, sin DDL compensatorio.
+            await CargarAsync();
+            ActualizarAcciones();
+        }
+    }
+
+    private async Task AsegurarPrivilegiosAsync(params string[] requeridos)
+    {
+        CargarPrivilegios(await Bd.ConsultarAsync(SqlTablespaces.PrivilegiosSesion));
+        if (!_enXepdb1) throw new InvalidOperationException("Las operaciones manuales solo están habilitadas en XEPDB1.");
+        if (!requeridos.Any(TienePrivilegio))
+            throw new InvalidOperationException($"Falta el privilegio requerido: {string.Join(" o ", requeridos)}.");
+    }
+
+    private async Task<string> DirectorioPdbAsync()
+    {
+        await AsegurarArchivosManualesAsync();
+        var ruta = await Bd.EscalarAsync(SqlTablespaces.DatafileUsers) as string;
+        if (string.IsNullOrWhiteSpace(ruta)) throw new InvalidOperationException("No se encontró el datafile de USERS para verificar el directorio de XEPDB1.");
+        return DdlTablespaces.DirectorioDeDatafile(ruta);
+    }
+
+    private async Task AsegurarArchivosManualesAsync()
+    {
+        var destinoOmg = await Bd.EscalarAsync(SqlTablespaces.DestinoOracleManagedFiles) as string;
+        if (!string.IsNullOrWhiteSpace(destinoOmg))
+            throw new InvalidOperationException("Oracle Managed Files está configurado; la administración manual de .DBF está deshabilitada.");
+    }
+
+    private async Task<string> SugerirRutaLibreAsync(string directorio, string tablespace, int desde)
+    {
+        for (var numero = desde; numero <= 99; numero++)
+        {
+            var candidata = DdlTablespaces.SugerirRutaDatafile(directorio, tablespace, numero);
+            var registrada = Convert.ToInt64(await Bd.EscalarAsync(SqlTablespaces.DatafileRegistrado, Parametro.De("ruta", candidata)) ?? 0) > 0;
+            if (!registrada && !File.Exists(candidata)) return candidata;
+        }
+        throw new InvalidOperationException("No hay un nombre .DBF libre entre 01 y 99 en el directorio verificado.");
+    }
+
+    private async Task<string> ValidarRutaNuevaAsync(string ruta, string directorio)
+    {
+        var validada = DdlTablespaces.ValidarRutaDatafile(ruta, directorio, verificarSistemaArchivos: true);
+        var registrada = Convert.ToInt64(await Bd.EscalarAsync(SqlTablespaces.DatafileRegistrado, Parametro.De("ruta", validada)) ?? 0);
+        if (registrada > 0) throw new ArgumentException("La ruta ya está registrada en DBA_DATA_FILES o DBA_TEMP_FILES.");
+        return validada;
+    }
+
+    private async Task<TablespaceMeta> RevalidarTablespaceAsync(string nombre)
+    {
+        var tabla = await Bd.ConsultarAsync(SqlTablespaces.MetadatosTablespace, Parametro.De("tablespace", nombre));
+        if (tabla.Rows.Count != 1) throw new InvalidOperationException("El tablespace ya no existe o no se pudo identificar de forma única.");
+        var fila = tabla.Rows[0];
+        return new TablespaceMeta((string)fila["TABLESPACE_NAME"], (string)fila["CONTENTS"], (string)fila["STATUS"],
+            string.Equals(fila["BIGFILE"] as string, "YES", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private async Task<DatafileMeta> RevalidarDatafileAsync(SeleccionDatafile seleccionado)
+    {
+        var tabla = await Bd.ConsultarAsync(SqlTablespaces.MetadatosDatafile,
+            Parametro.De("tablespace", seleccionado.Tablespace), Parametro.De("file_id", seleccionado.FileId), Parametro.De("file_name", seleccionado.Ruta));
+        if (tabla.Rows.Count != 1) throw new InvalidOperationException("El datafile seleccionado cambió, desapareció o no coincide con la selección original.");
+        var fila = tabla.Rows[0];
+        var incremento = Convert.ToInt64(fila["INCREMENT_BY"]) * Convert.ToInt64(fila["BLOCK_SIZE"]);
+        return new DatafileMeta((string)fila["TABLESPACE_NAME"], (string)fila["FILE_NAME"], Convert.ToInt64(fila["BYTES"]),
+            Convert.ToInt64(fila["MAXBYTES"]), incremento, (string)fila["CONTENTS"], (string)fila["TABLESPACE_STATUS"],
+            string.Equals(fila["BIGFILE"] as string, "YES", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private async Task<(long Segmentos, long Usuarios, long Objetos)> DependenciasEliminarAsync(string nombre)
+    {
+        var tabla = await Bd.ConsultarAsync(SqlTablespaces.DependenciasEliminar, Parametro.De("tablespace", nombre));
+        return (Convert.ToInt64(tabla.Rows[0]["SEGMENTOS"]), Convert.ToInt64(tabla.Rows[0]["USUARIOS_ASIGNADOS"]), Convert.ToInt64(tabla.Rows[0]["OBJETOS_ASIGNADOS"]));
+    }
+
+    private static void AsegurarElegible(TablespaceMeta meta, bool requiereOnline)
+    {
+        if (!DdlTablespaces.EsElegibleParaAdministrar(meta.Nombre, meta.Contenido))
+            throw new InvalidOperationException("Solo se administran tablespaces permanentes de prueba autorizados; SYSTEM, SYSAUX, USERS, UNDO, TEMP y tablespaces de aplicación están protegidos.");
+        if (requiereOnline && !string.Equals(meta.Estado, "ONLINE", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("La operación requiere un tablespace ONLINE y de lectura/escritura.");
+    }
+
+    private static void AsegurarDatafileElegible(DatafileMeta meta)
+    {
+        AsegurarElegible(new TablespaceMeta(meta.Tablespace, meta.Contenido, meta.EstadoTablespace, meta.Bigfile), true);
+        if (meta.Bigfile) throw new InvalidOperationException("BIGFILE se trata de forma conservadora: no se administra manualmente por datafile.");
+    }
+
+    private static void AsegurarEliminable(TablespaceMeta meta, (long Segmentos, long Usuarios, long Objetos) dependencias)
+    {
+        if (!DdlTablespaces.PuedeEliminar(meta.Nombre, meta.Contenido, dependencias.Segmentos, dependencias.Usuarios, dependencias.Objetos))
+            throw new InvalidOperationException("DROP bloqueado: se exige procedencia de esta sesión, cero segmentos, cero objetos y cero usuarios asignados. Tras reiniciar no se inventa procedencia.");
+    }
+
+    private void CargarPrivilegios(DataTable tabla)
+    {
+        _privilegios.Clear();
+        _enXepdb1 = false;
+        foreach (DataRow fila in tabla.Rows)
+        {
+            if (string.Equals(fila["CON_NAME"] as string, "XEPDB1", StringComparison.OrdinalIgnoreCase)) _enXepdb1 = true;
+            if (fila["PRIVILEGE"] is string privilegio && privilegio.Length > 0) _privilegios.Add(privilegio);
+        }
+    }
+
+    private bool TienePrivilegio(string privilegio) => _privilegios.Contains(privilegio);
+    private static long ARedondearMb(long bytes) => bytes <= 0 ? 1 : bytes / Mb + (bytes % Mb == 0 ? 0 : 1);
+
+    private TablespaceSeleccion? TablespaceActual() => grdTablespaces.SelectedRows.Count == 1 && grdTablespaces.CurrentRow?.DataBoundItem is DataRowView fila
+        ? new TablespaceSeleccion(fila.Row.Field<string>("TABLESPACE_NAME") ?? "", fila.Row.Field<string>("CONTENTS") ?? "", fila.Row.Field<string>("STATUS") ?? "") : null;
+
+    private TablespaceSeleccion CapturarTablespace() => TablespaceActual() ?? throw new InvalidOperationException("Seleccione un tablespace.");
+
+    private SeleccionDatafile? DatafileActual() => grdArchivos.SelectedRows.Count == 1 && grdArchivos.CurrentRow?.DataBoundItem is DataRowView fila
+        ? new SeleccionDatafile(_tablespaceSeleccionado ?? "", Convert.ToInt64(fila.Row["FILE_ID"]), fila.Row.Field<string>("FILE_NAME") ?? "",
+            string.Equals(fila.Row.Field<string>("TIPO_ARCHIVO"), "DATAFILE", StringComparison.Ordinal)) : null;
+
+    private SeleccionDatafile CapturarDatafile()
+    {
+        var archivo = DatafileActual() ?? throw new InvalidOperationException("Seleccione un datafile.");
+        if (!archivo.EsDatafile) throw new InvalidOperationException("Las operaciones sobre TEMPFILE están deshabilitadas por seguridad.");
+        if (string.IsNullOrWhiteSpace(archivo.Tablespace) || string.IsNullOrWhiteSpace(archivo.Ruta)) throw new InvalidOperationException("La selección de datafile no es válida.");
+        return archivo;
+    }
+
+    private void ActualizarAcciones()
+    {
+        var ts = TablespaceActual();
+        var archivo = DatafileActual();
+        var elegible = ts is not null && _enXepdb1 && !_operacion && DdlTablespaces.EsElegibleParaAdministrar(ts.Nombre, ts.Contenido);
+        var archivoElegible = elegible && archivo is { EsDatafile: true };
+        btnCrear.Enabled = _enXepdb1 && !_operacion && TienePrivilegio("CREATE TABLESPACE");
+        btnAgregarArchivo.Enabled = elegible && TienePrivilegio("ALTER TABLESPACE") && ts!.Estado == "ONLINE";
+        btnRedimensionar.Enabled = archivoElegible && TienePrivilegio("ALTER DATABASE");
+        btnAutoextend.Enabled = archivoElegible && TienePrivilegio("ALTER DATABASE");
+        var puedeEstado = elegible && (TienePrivilegio("ALTER TABLESPACE") || TienePrivilegio("MANAGE TABLESPACE"));
+        btnOffline.Enabled = puedeEstado && DdlTablespaces.TransicionValida(ts!.Estado, EstadoTablespace.Offline);
+        btnOnline.Enabled = puedeEstado && DdlTablespaces.TransicionValida(ts!.Estado, EstadoTablespace.Online);
+        btnSoloLectura.Enabled = puedeEstado && DdlTablespaces.TransicionValida(ts!.Estado, EstadoTablespace.SoloLectura);
+        btnLecturaEscritura.Enabled = puedeEstado && DdlTablespaces.TransicionValida(ts!.Estado, EstadoTablespace.LecturaEscritura);
+        btnEliminar.Enabled = elegible && TienePrivilegio("DROP TABLESPACE") && DdlTablespaces.FueCreadoEnSesion(ts!.Nombre);
+    }
+
+    private sealed record TablespaceSeleccion(string Nombre, string Contenido, string Estado);
+    private sealed record SeleccionDatafile(string Tablespace, long FileId, string Ruta, bool EsDatafile);
+    private sealed record TablespaceMeta(string Nombre, string Contenido, string Estado, bool Bigfile);
+    private sealed record DatafileMeta(string Tablespace, string Ruta, long Bytes, long MaxBytes, long IncrementoBytes, string Contenido, string EstadoTablespace, bool Bigfile);
 
     private void ConfigurarGrilla(DataGridView grilla, string mensajeVacio, string icono)
     {

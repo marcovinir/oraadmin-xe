@@ -3,6 +3,81 @@ namespace OraAdminXE.Modulos.Tablespaces;
 /// <summary>Consultas de solo lectura para la pantalla de tablespaces en XEPDB1.</summary>
 public static class SqlTablespaces
 {
+    /// <summary>Privilegios efectivos de la sesión y contenedor actual, sin asumir que DBA basta.</summary>
+    public const string PrivilegiosSesion = """
+        SELECT SYS_CONTEXT('USERENV', 'CON_NAME') AS con_name, privilege
+        FROM session_privs
+        WHERE privilege IN ('CREATE TABLESPACE', 'ALTER TABLESPACE', 'ALTER DATABASE', 'MANAGE TABLESPACE', 'DROP TABLESPACE')
+        UNION ALL
+        SELECT SYS_CONTEXT('USERENV', 'CON_NAME') AS con_name, CAST(NULL AS VARCHAR2(40)) AS privilege
+        FROM dual
+        """;
+
+    /// <summary>Un datafile existente de USERS: origen confiable de la ruta sugerida dentro de XEPDB1.</summary>
+    public const string DatafileUsers = """
+        SELECT file_name
+        FROM (
+            SELECT df.file_name
+            FROM dba_data_files df
+            JOIN dba_tablespaces ts ON ts.tablespace_name = df.tablespace_name
+            WHERE df.tablespace_name = 'USERS' AND ts.contents = 'PERMANENT'
+            ORDER BY df.file_id
+        )
+        WHERE ROWNUM = 1
+        """;
+
+    /// <summary>Si OMF está configurado, esta UI no intenta inventar nombres manuales.</summary>
+    public const string DestinoOracleManagedFiles = """
+        SELECT value
+        FROM v$parameter
+        WHERE name = 'db_create_file_dest'
+        """;
+
+    /// <summary>Metadatos exactos requeridos antes de cualquier DDL sobre un tablespace.</summary>
+    public const string MetadatosTablespace = """
+        SELECT tablespace_name, contents, status, bigfile, block_size
+        FROM dba_tablespaces
+        WHERE tablespace_name = :tablespace
+        """;
+
+    /// <summary>Identidad y tamaños sin redondear de un datafile, reconsultados antes de DDL.</summary>
+    public const string MetadatosDatafile = """
+        SELECT df.tablespace_name, df.file_id, df.file_name, df.bytes, df.maxbytes,
+               df.autoextensible, df.increment_by, NVL(df.online_status, df.status) AS estado,
+               ts.contents, ts.status AS tablespace_status, ts.bigfile, ts.block_size
+        FROM dba_data_files df
+        JOIN dba_tablespaces ts ON ts.tablespace_name = df.tablespace_name
+        WHERE df.tablespace_name = :tablespace
+          AND df.file_id = :file_id
+          AND df.file_name = :file_name
+        """;
+
+    /// <summary>Evita que un datafile propuesto coincida con un datafile o tempfile registrado.</summary>
+    public const string DatafileRegistrado = """
+        SELECT COUNT(*)
+        FROM (
+            SELECT file_name FROM dba_data_files
+            UNION ALL
+            SELECT file_name FROM dba_temp_files
+        )
+        WHERE UPPER(file_name) = UPPER(:ruta)
+        """;
+
+    /// <summary>Dependencias que hacen inseguro un DROP, todas verificadas de nuevo al final.</summary>
+    public const string DependenciasEliminar = """
+        SELECT (SELECT COUNT(*) FROM dba_segments WHERE tablespace_name = :tablespace) AS segmentos,
+               (SELECT COUNT(*) FROM dba_users
+                 WHERE default_tablespace = :tablespace OR temporary_tablespace = :tablespace) AS usuarios_asignados,
+               (SELECT COUNT(*) FROM (
+                    SELECT owner, table_name AS nombre FROM dba_tables WHERE tablespace_name = :tablespace
+                    UNION ALL SELECT owner, index_name FROM dba_indexes WHERE tablespace_name = :tablespace
+                    UNION ALL SELECT owner, segment_name FROM dba_lobs WHERE tablespace_name = :tablespace
+                    UNION ALL SELECT table_owner, table_name FROM dba_tab_partitions WHERE tablespace_name = :tablespace
+                    UNION ALL SELECT index_owner, index_name FROM dba_ind_partitions WHERE tablespace_name = :tablespace
+                )) AS objetos_asignados
+        FROM dual
+        """;
+
     /// <summary>
     /// Uso actual de tablespaces permanentes, UNDO y temporales. Para TEMP se consulta
     /// V$TEMP_SPACE_HEADER: DBA_FREE_SPACE no describe el espacio temporal en uso.
