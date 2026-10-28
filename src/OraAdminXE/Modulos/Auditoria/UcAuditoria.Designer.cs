@@ -37,7 +37,7 @@ partial class UcAuditoria
         lblDescripcion.ForeColor = Color.FromArgb(100, 116, 139);
         lblDescripcion.Location = new Point(26, 58);
         lblDescripcion.Name = "lblDescripcion";
-        lblDescripcion.Text = "Políticas de auditoría unificada. La pista se incorporará en una pestaña separada.";
+        lblDescripcion.Text = "Administración de políticas y consulta de eventos de auditoría unificada de Oracle.";
         //
         // pestanas
         //
