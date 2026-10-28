@@ -14,6 +14,7 @@ public sealed class DlgDatafile : VentanaBase
     private readonly NumericUpDown _numNext;
     private readonly NumericUpDown _numMax;
     private readonly Label _lblError = new() { AutoSize = true, ForeColor = Tema.Peligro, MaximumSize = new Size(520, 0) };
+    private readonly long _maximoMb;
 
     public string Ruta => _txtRuta.Text;
     public long TamanoMb => decimal.ToInt64(_numTamano.Value);
@@ -21,9 +22,11 @@ public sealed class DlgDatafile : VentanaBase
     public long NextMb => decimal.ToInt64(_numNext.Value);
     public long MaxMb => decimal.ToInt64(_numMax.Value);
 
-    public DlgDatafile(ModoDatafile modo, string ruta, long tamanoActualMb, long maxActualMb = 0, long nextActualMb = 10)
+    public DlgDatafile(ModoDatafile modo, string ruta, long tamanoActualMb, long maxActualMb = 0, long nextActualMb = 10,
+        long maximoMb = DdlTablespaces.MaximoMbUi)
     {
         _modo = modo;
+        _maximoMb = maximoMb;
         Text = modo switch
         {
             ModoDatafile.Agregar => "Agregar datafile",
@@ -38,6 +41,7 @@ public sealed class DlgDatafile : VentanaBase
         _numTamano = Numero(modo == ModoDatafile.Redimensionar ? Math.Max(tamanoActualMb, 100) : tamanoActualMb);
         _numNext = Numero(Math.Max(1, nextActualMb));
         _numMax = Numero(Math.Max(tamanoActualMb + Math.Max(1, nextActualMb), maxActualMb));
+        _numTamano.Maximum = _numNext.Maximum = _numMax.Maximum = maximoMb;
         _chkAutoextend.Checked = modo == ModoDatafile.Autoextend;
 
         var contenido = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(24), ColumnCount = 2, AutoScroll = true };
@@ -55,8 +59,10 @@ public sealed class DlgDatafile : VentanaBase
         }
         contenido.Controls.Add(_lblError, 1, 5);
 
-        var btnAceptar = Tema.Boton("Continuar", primario: true, icono: "\uE73E") { DialogResult = DialogResult.OK };
-        var btnCancelar = Tema.Boton("Cancelar") { DialogResult = DialogResult.Cancel };
+        var btnAceptar = Tema.Boton("Continuar", primario: true, icono: "\uE73E");
+        btnAceptar.DialogResult = DialogResult.OK;
+        var btnCancelar = Tema.Boton("Cancelar");
+        btnCancelar.DialogResult = DialogResult.Cancel;
         var pie = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 58, FlowDirection = FlowDirection.RightToLeft, Padding = new Padding(16, 8, 16, 8) };
         pie.Controls.AddRange([btnAceptar, btnCancelar]);
         Controls.Add(contenido);
@@ -72,9 +78,9 @@ public sealed class DlgDatafile : VentanaBase
         try
         {
             if (_modo is ModoDatafile.Agregar or ModoDatafile.Redimensionar)
-                DdlTablespaces.ValidarTamano(TamanoMb, "tamaño");
+                DdlTablespaces.ValidarTamano(TamanoMb, "tamaño", _maximoMb);
             if (_modo == ModoDatafile.Autoextend && Autoextend)
-                DdlTablespaces.ValidarAutoextend(tamanoActualMb, NextMb, MaxMb);
+                DdlTablespaces.ValidarAutoextend(tamanoActualMb, NextMb, MaxMb, _maximoMb);
         }
         catch (ArgumentException ex)
         {

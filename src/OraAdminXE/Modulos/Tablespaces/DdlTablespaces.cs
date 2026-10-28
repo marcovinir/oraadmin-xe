@@ -10,8 +10,9 @@ namespace OraAdminXE.Modulos.Tablespaces;
 public static class DdlTablespaces
 {
     private const long Mb = 1024L * 1024L;
-    // Límite conservador para SMALLFILE con bloque de 8 KB de XE; BIGFILE se rechaza en esta UI.
-    public const long MaximoMbUi = 32_767;
+    // Límite de control WinForms. El límite real se calcula con BLOCK_SIZE para cada SMALLFILE.
+    public const long MaximoMbUi = 1_000_000;
+    private const long MaxBloquesSmallfile = 4_194_303;
     private static readonly HashSet<string> CreadosEnSesion = new(StringComparer.OrdinalIgnoreCase);
     private static readonly HashSet<string> SiempreProtegidos = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -42,9 +43,13 @@ public static class DdlTablespaces
         string.Equals(contenido, "PERMANENT", StringComparison.OrdinalIgnoreCase) &&
         !EsProtegido(nombre, contenido) && EsNombrePruebaAutorizado(nombre);
 
-    public static bool PuedeEliminar(string nombre, string contenido, long segmentos, long usuariosAsignados, long objetosAsignados = 0) =>
+    public static bool PuedeAdministrar(string nombre, string contenido) =>
+        EsElegibleParaAdministrar(nombre, contenido) && CreadosEnSesion.Contains(ValidarNombre(nombre));
+
+    public static bool PuedeEliminar(string nombre, string contenido, long? segmentos, long? usuariosAsignados,
+        long? objetosAsignados = 0, long? cuotas = 0, long? predeterminadosPdb = 0) =>
         EsElegibleParaAdministrar(nombre, contenido) && segmentos == 0 && usuariosAsignados == 0 && objetosAsignados == 0 &&
-        CreadosEnSesion.Contains(ValidarNombre(nombre));
+        cuotas == 0 && predeterminadosPdb == 0 && CreadosEnSesion.Contains(ValidarNombre(nombre));
 
     public static void RegistrarCreadoEnSesion(string nombre) => CreadosEnSesion.Add(ValidarNombre(nombre));
     public static void OlvidarCreadoEnSesion(string nombre) => CreadosEnSesion.Remove(ValidarNombre(nombre));
@@ -59,43 +64,45 @@ public static class DdlTablespaces
         _ => false
     };
 
-    public static string Crear(string nombre, string ruta, long inicialMb, bool autoextend, long? nextMb, long? maxMb)
+    public static string Crear(string nombre, string ruta, long inicialMb, bool autoextend, long? nextMb, long? maxMb,
+        long maximoMb = MaximoMbUi)
     {
-        var ts = ValidarNombre(nombre);
+        var ts = ValidarNombrePrueba(nombre);
         var archivo = ValidarRutaDdl(ruta);
         ValidarNombreArchivo(ts, archivo);
-        ValidarTamano(inicialMb, "tamaño inicial");
-        var extension = ClausulaAutoextend(autoextend, inicialMb, nextMb, maxMb);
+        ValidarTamano(inicialMb, "tamaño inicial", maximoMb);
+        var extension = ClausulaAutoextend(autoextend, inicialMb, nextMb, maxMb, maximoMb);
         return $"CREATE TABLESPACE {ts} DATAFILE {Identificador.Literal(archivo)} SIZE {inicialMb}M{extension}";
     }
 
-    public static string AgregarDatafile(string nombre, string ruta, long tamanoMb)
+    public static string AgregarDatafile(string nombre, string ruta, long tamanoMb, long maximoMb = MaximoMbUi)
     {
-        var ts = ValidarNombre(nombre);
+        var ts = ValidarNombrePrueba(nombre);
         var archivo = ValidarRutaDdl(ruta);
         ValidarNombreArchivo(ts, archivo);
-        ValidarTamano(tamanoMb, "tamaño del datafile");
+        ValidarTamano(tamanoMb, "tamaño del datafile", maximoMb);
         return $"ALTER TABLESPACE {ts} ADD DATAFILE {Identificador.Literal(archivo)} SIZE {tamanoMb}M";
     }
 
-    public static string RedimensionarDatafile(string ruta, long tamanoMb)
+    public static string RedimensionarDatafile(string ruta, long tamanoMb, long maximoMb = MaximoMbUi)
     {
         var archivo = ValidarRutaDdl(ruta);
-        ValidarTamano(tamanoMb, "nuevo tamaño");
+        ValidarTamano(tamanoMb, "nuevo tamaño", maximoMb);
         return $"ALTER DATABASE DATAFILE {Identificador.Literal(archivo)} RESIZE {tamanoMb}M";
     }
 
-    public static string CambiarAutoextend(string ruta, bool activar, long tamanoActualMb, long? nextMb = null, long? maxMb = null)
+    public static string CambiarAutoextend(string ruta, bool activar, long tamanoActualMb, long? nextMb = null, long? maxMb = null,
+        long maximoPermitidoMb = MaximoMbUi)
     {
         var archivo = ValidarRutaDdl(ruta);
-        ValidarTamano(tamanoActualMb, "tamaño actual");
-        var clausula = ClausulaAutoextend(activar, tamanoActualMb, nextMb, maxMb).TrimStart();
+        ValidarTamano(tamanoActualMb, "tamaño actual", maximoPermitidoMb);
+        var clausula = ClausulaAutoextend(activar, tamanoActualMb, nextMb, maxMb, maximoPermitidoMb).TrimStart();
         return $"ALTER DATABASE DATAFILE {Identificador.Literal(archivo)} {clausula}";
     }
 
     public static string CambiarEstado(string nombre, EstadoTablespace destino)
     {
-        var ts = ValidarNombre(nombre);
+        var ts = ValidarNombrePrueba(nombre);
         var clausula = destino switch
         {
             EstadoTablespace.Online => "ONLINE",
@@ -107,21 +114,36 @@ public static class DdlTablespaces
         return $"ALTER TABLESPACE {ts} {clausula}";
     }
 
-    public static string Eliminar(string nombre) => $"DROP TABLESPACE {ValidarNombre(nombre)} INCLUDING CONTENTS AND DATAFILES";
+    public static string Eliminar(string nombre) => $"DROP TABLESPACE {ValidarNombrePrueba(nombre)} INCLUDING CONTENTS AND DATAFILES";
 
-    public static void ValidarTamano(long mb, string campo)
+    public static string ValidarNombrePrueba(string nombre)
     {
-        if (mb is < 1 or > MaximoMbUi)
-            throw new ArgumentException($"El {campo} debe estar entre 1 y {MaximoMbUi:N0} MB.");
+        var validado = ValidarNombre(nombre);
+        if (!EsNombrePruebaAutorizado(validado))
+            throw new ArgumentException("Solo se permiten TS_VENTAS u ORAADMIN_TEST_* para administración de prueba.");
+        return validado;
     }
 
-    public static void ValidarAutoextend(long tamanoActualMb, long? nextMb, long? maxMb)
+    public static long MaximoMbSmallfile(long blockSize)
     {
-        ValidarTamano(tamanoActualMb, "tamaño actual");
+        if (blockSize is < 512 or > 32_768 || (blockSize & (blockSize - 1)) != 0)
+            throw new ArgumentException("BLOCK_SIZE no es válido para un datafile SMALLFILE.", nameof(blockSize));
+        return checked(MaxBloquesSmallfile * blockSize / Mb);
+    }
+
+    public static void ValidarTamano(long mb, string campo, long maximoMb = MaximoMbUi)
+    {
+        if (maximoMb < 1 || mb is < 1 || mb > maximoMb)
+            throw new ArgumentException($"El {campo} debe estar entre 1 y {maximoMb:N0} MB.");
+    }
+
+    public static void ValidarAutoextend(long tamanoActualMb, long? nextMb, long? maxMb, long maximoPermitidoMb = MaximoMbUi)
+    {
+        ValidarTamano(tamanoActualMb, "tamaño actual", maximoPermitidoMb);
         if (nextMb is null || maxMb is null)
             throw new ArgumentException("Indique NEXT y MAXSIZE cuando autoextend está activado.");
-        ValidarTamano(nextMb.Value, "NEXT");
-        ValidarTamano(maxMb.Value, "MAXSIZE");
+        ValidarTamano(nextMb.Value, "NEXT", maximoPermitidoMb);
+        ValidarTamano(maxMb.Value, "MAXSIZE", maximoPermitidoMb);
         if (maxMb < tamanoActualMb + nextMb)
             throw new ArgumentException("MAXSIZE debe permitir al menos el tamaño actual más un incremento NEXT.");
     }
@@ -133,28 +155,21 @@ public static class DdlTablespaces
     /// </summary>
     public static string ValidarRutaDatafile(string ruta, string directorioPermitido, bool verificarSistemaArchivos)
     {
-        var archivo = NormalizarRutaWindows(ruta, "ruta del datafile");
-        var directorio = NormalizarRutaWindows(directorioPermitido, "directorio de datafiles").TrimEnd('\\');
-        var directorioArchivo = archivo[..archivo.LastIndexOf('\\')];
-        if (!string.Equals(directorioArchivo, directorio, StringComparison.OrdinalIgnoreCase))
-            throw new ArgumentException("El datafile debe ubicarse exactamente en el directorio verificado de USERS.");
-        if (!archivo.EndsWith(".DBF", StringComparison.OrdinalIgnoreCase))
-            throw new ArgumentException("El datafile debe tener extensión .DBF.");
-        if (EsRutaRestringida(archivo))
-            throw new ArgumentException("La ruta pertenece a una ubicación del sistema u Oracle no autorizada.");
+        var (archivo, _) = ValidarRutaDatafileComun(ruta, directorioPermitido, verificarSistemaArchivos);
+        if (verificarSistemaArchivos && File.Exists(archivo))
+            throw new ArgumentException("Ya existe un archivo físico con ese nombre; elija otro nombre.");
+        return archivo;
+    }
 
+    /// <summary>Valida un DBF existente sin tratar su existencia como una colisión.</summary>
+    public static string ValidarRutaDatafileExistente(string ruta, string directorioPermitido, bool verificarSistemaArchivos)
+    {
+        var (archivo, _) = ValidarRutaDatafileComun(ruta, directorioPermitido, verificarSistemaArchivos);
         if (verificarSistemaArchivos)
         {
-            if (!Directory.Exists(directorio))
-                throw new ArgumentException("El directorio verificado de Oracle no está disponible desde esta aplicación.");
-            for (DirectoryInfo? info = new(directorio); info is not null; info = info.Parent)
-                if ((info.Attributes & FileAttributes.ReparsePoint) != 0 || info.LinkTarget is not null)
-                    throw new ArgumentException("No se permiten directorios con reparse point o enlace simbólico.");
-            var unidad = new DriveInfo(directorio[..3]);
-            if (unidad.DriveType != DriveType.Fixed)
-                throw new ArgumentException("Solo se permiten unidades locales fijas; no UNC ni unidades de red.");
-            if (File.Exists(archivo))
-                throw new ArgumentException("Ya existe un archivo físico con ese nombre; elija otro nombre.");
+            if (!File.Exists(archivo)) throw new ArgumentException("El datafile existente no está disponible localmente para validación.");
+            if ((File.GetAttributes(archivo) & FileAttributes.ReparsePoint) != 0)
+                throw new ArgumentException("No se permiten datafiles que sean reparse points o enlaces simbólicos.");
         }
         return archivo;
     }
@@ -175,10 +190,10 @@ public static class DdlTablespaces
         return $"{raiz}\\{ValidarNombre(tablespace)}{numero:00}.DBF";
     }
 
-    private static string ClausulaAutoextend(bool activar, long tamanoActualMb, long? nextMb, long? maxMb)
+    private static string ClausulaAutoextend(bool activar, long tamanoActualMb, long? nextMb, long? maxMb, long maximoPermitidoMb)
     {
         if (!activar) return " AUTOEXTEND OFF";
-        ValidarAutoextend(tamanoActualMb, nextMb, maxMb);
+        ValidarAutoextend(tamanoActualMb, nextMb, maxMb, maximoPermitidoMb);
         return $" AUTOEXTEND ON NEXT {nextMb}M MAXSIZE {maxMb}M";
     }
 
@@ -217,11 +232,37 @@ public static class DdlTablespaces
     private static bool EsRutaRestringida(string ruta)
     {
         var mayuscula = ruta.ToUpperInvariant();
-        return mayuscula.Contains("\\WINDOWS\\", StringComparison.Ordinal) ||
-               mayuscula.Contains("\\PROGRAM FILES\\", StringComparison.Ordinal) ||
-               mayuscula.Contains("\\PROGRAM FILES (X86)\\", StringComparison.Ordinal) ||
-               mayuscula.Contains("\\ORACLE\\PRODUCT\\", StringComparison.Ordinal) ||
-               mayuscula.Contains("\\DBHOME", StringComparison.Ordinal);
+        return mayuscula.Contains("\\WINDOWS\\", StringComparison.Ordinal);
+    }
+
+    private static (string Archivo, string Directorio) ValidarRutaDatafileComun(string ruta, string directorioPermitido, bool verificarSistemaArchivos)
+    {
+        var archivo = NormalizarRutaWindows(ruta, "ruta del datafile");
+        var directorio = NormalizarRutaWindows(directorioPermitido, "directorio de datafiles").TrimEnd('\\');
+        var directorioArchivo = archivo[..archivo.LastIndexOf('\\')];
+        if (!string.Equals(directorioArchivo, directorio, StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("El datafile debe ubicarse exactamente en el directorio verificado de USERS.");
+        if (!archivo.EndsWith(".DBF", StringComparison.OrdinalIgnoreCase) || EsRutaRestringida(archivo))
+            throw new ArgumentException("La ruta del datafile no está permitida.");
+        if (!verificarSistemaArchivos) return (archivo, directorio);
+        if (!Directory.Exists(directorio))
+            throw new ArgumentException("El directorio verificado de Oracle no está disponible desde esta aplicación.");
+        for (DirectoryInfo? info = new(directorio); info is not null; info = info.Parent)
+            if ((info.Attributes & FileAttributes.ReparsePoint) != 0 || info.LinkTarget is not null)
+                throw new ArgumentException("No se permiten directorios con reparse point o enlace simbólico.");
+        var unidad = new DriveInfo(directorio[..3]);
+        if (unidad.DriveType != DriveType.Fixed)
+            throw new ArgumentException("Solo se permiten unidades locales fijas; no UNC ni unidades de red.");
+        return (archivo, directorio);
+    }
+
+    /// <summary>Orquesta la revalidación final, después del preview aprobado y antes del DDL.</summary>
+    public static async Task EjecutarTrasRevalidarAsync(Func<Task> revalidar, Func<Task> ejecutar)
+    {
+        ArgumentNullException.ThrowIfNull(revalidar);
+        ArgumentNullException.ThrowIfNull(ejecutar);
+        await revalidar();
+        await ejecutar();
     }
 }
 

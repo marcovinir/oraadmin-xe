@@ -33,6 +33,12 @@ public static class SqlTablespaces
         WHERE name = 'db_create_file_dest'
         """;
 
+    public const string BloquePredeterminado = """
+        SELECT value
+        FROM v$parameter
+        WHERE name = 'db_block_size'
+        """;
+
     /// <summary>Metadatos exactos requeridos antes de cualquier DDL sobre un tablespace.</summary>
     public const string MetadatosTablespace = """
         SELECT tablespace_name, contents, status, bigfile, block_size
@@ -68,6 +74,10 @@ public static class SqlTablespaces
         SELECT (SELECT COUNT(*) FROM dba_segments WHERE tablespace_name = :tablespace) AS segmentos,
                (SELECT COUNT(*) FROM dba_users
                  WHERE default_tablespace = :tablespace OR temporary_tablespace = :tablespace) AS usuarios_asignados,
+               (SELECT COUNT(*) FROM dba_ts_quotas WHERE tablespace_name = :tablespace) AS cuotas,
+               (SELECT COUNT(*) FROM database_properties
+                 WHERE property_name IN ('DEFAULT_PERMANENT_TABLESPACE', 'DEFAULT_TEMP_TABLESPACE')
+                   AND property_value = :tablespace) AS predeterminados_pdb,
                (SELECT COUNT(*) FROM (
                     SELECT owner, table_name AS nombre FROM dba_tables WHERE tablespace_name = :tablespace
                     UNION ALL SELECT owner, index_name FROM dba_indexes WHERE tablespace_name = :tablespace

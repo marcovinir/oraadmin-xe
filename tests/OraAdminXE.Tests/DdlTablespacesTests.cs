@@ -119,4 +119,68 @@ public class DdlTablespacesTests
         Assert.Throws<ArgumentException>(() => DdlTablespaces.Crear(entrada, Archivo, 50, false, null, null));
         Assert.Throws<ArgumentException>(() => DdlTablespaces.RedimensionarDatafile(entrada, 50));
     }
+
+    [Fact]
+    public async Task Revalidacion_final_se_ejecuta_antes_del_ddl_y_lo_bloquea_si_falla()
+    {
+        var pasos = new List<string>();
+        await DdlTablespaces.EjecutarTrasRevalidarAsync(
+            () => { pasos.Add("revalidar"); return Task.CompletedTask; },
+            () => { pasos.Add("ejecutar"); return Task.CompletedTask; });
+        Assert.Equal(["revalidar", "ejecutar"], pasos);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => DdlTablespaces.EjecutarTrasRevalidarAsync(
+            () => throw new InvalidOperationException("dependencia nueva"),
+            () => { pasos.Add("no debe ejecutar"); return Task.CompletedTask; }));
+        Assert.DoesNotContain("no debe ejecutar", pasos);
+    }
+
+    [Fact]
+    public void Alter_exige_procedencia_en_esta_instancia()
+    {
+        const string nombre = "ORAADMIN_TEST_PROVENANCE";
+        Assert.False(DdlTablespaces.PuedeAdministrar(nombre, "PERMANENT"));
+        DdlTablespaces.RegistrarCreadoEnSesion(nombre);
+        try { Assert.True(DdlTablespaces.PuedeAdministrar(nombre, "PERMANENT")); }
+        finally { DdlTablespaces.OlvidarCreadoEnSesion(nombre); }
+    }
+
+    [Fact]
+    public void Crear_y_ddl_de_estado_rechazan_nombres_fuera_de_la_politica()
+    {
+        Assert.Throws<ArgumentException>(() => DdlTablespaces.Crear("APP_DATOS", Directorio + "\\APP_DATOS01.DBF", 50, false, null, null));
+        Assert.Throws<ArgumentException>(() => DdlTablespaces.CambiarEstado("APP_DATOS", EstadoTablespace.Offline));
+        Assert.Throws<ArgumentException>(() => DdlTablespaces.Eliminar("APP_DATOS"));
+    }
+
+    [Fact]
+    public void Ruta_existente_debe_pertenecer_exactamente_al_directorio_verificado()
+    {
+        Assert.Equal(Archivo, DdlTablespaces.ValidarRutaDatafileExistente(Archivo, Directorio, verificarSistemaArchivos: false));
+        Assert.Throws<ArgumentException>(() => DdlTablespaces.ValidarRutaDatafileExistente("D:\\externo\\TS_VENTAS01.DBF", Directorio, false));
+        Assert.Throws<ArgumentException>(() => DdlTablespaces.ValidarRutaDatafileExistente("\\\\servidor\\datos\\TS_VENTAS01.DBF", Directorio, false));
+    }
+
+    [Fact]
+    public void Drop_bloquea_cuotas_predeterminados_y_resultados_desconocidos()
+    {
+        const string nombre = "ORAADMIN_TEST_DEPENDENCIAS";
+        DdlTablespaces.RegistrarCreadoEnSesion(nombre);
+        try
+        {
+            Assert.False(DdlTablespaces.PuedeEliminar(nombre, "PERMANENT", 0, 0, cuotas: 1));
+            Assert.False(DdlTablespaces.PuedeEliminar(nombre, "PERMANENT", 0, 0, predeterminadosPdb: 1));
+            Assert.False(DdlTablespaces.PuedeEliminar(nombre, "PERMANENT", null, 0));
+        }
+        finally { DdlTablespaces.OlvidarCreadoEnSesion(nombre); }
+    }
+
+    [Fact]
+    public void Limites_smallfile_dependen_del_block_size_y_protegen_autoextend()
+    {
+        Assert.Equal(8_191, DdlTablespaces.MaximoMbSmallfile(2_048));
+        Assert.Equal(32_767, DdlTablespaces.MaximoMbSmallfile(8_192));
+        Assert.Throws<ArgumentException>(() => DdlTablespaces.ValidarTamano(8_192, "tamaño", 8_191));
+        Assert.Throws<ArgumentException>(() => DdlTablespaces.CambiarAutoextend(Archivo, true, 50, 10, 101, 100));
+    }
 }

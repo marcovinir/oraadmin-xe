@@ -22,8 +22,10 @@ public sealed class DlgEliminarTablespace : VentanaBase
         contenido.Controls.Add(new Label { AutoSize = true, MaximumSize = new Size(510, 0), Text = $"Esta acción elimina el tablespace y sus datafiles registrados por Oracle. Escriba {_nombre} para continuar." });
         contenido.Controls.Add(_txtConfirmacion);
         contenido.Controls.Add(_lblError);
-        var btnContinuar = Tema.Boton("Ver SQL", primario: true, icono: "\uE8A7") { DialogResult = DialogResult.OK };
-        var btnCancelar = Tema.Boton("Cancelar") { DialogResult = DialogResult.Cancel };
+        var btnContinuar = Tema.Boton("Ver SQL", primario: true, icono: "\uE8A7");
+        btnContinuar.DialogResult = DialogResult.OK;
+        var btnCancelar = Tema.Boton("Cancelar");
+        btnCancelar.DialogResult = DialogResult.Cancel;
         var pie = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 58, FlowDirection = FlowDirection.RightToLeft, Padding = new Padding(16, 8, 16, 8) };
         pie.Controls.AddRange([btnContinuar, btnCancelar]);
         Controls.Add(contenido);

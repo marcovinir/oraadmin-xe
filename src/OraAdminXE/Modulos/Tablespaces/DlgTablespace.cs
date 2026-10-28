@@ -12,6 +12,7 @@ public sealed class DlgTablespace : VentanaBase
     private readonly NumericUpDown _numNext = Numero(10);
     private readonly NumericUpDown _numMax = Numero(500);
     private readonly Label _lblError = new() { AutoSize = true, ForeColor = Tema.Peligro, MaximumSize = new Size(520, 0) };
+    private readonly long _maximoMb;
 
     public string Nombre => _txtNombre.Text;
     public string Ruta => _txtRuta.Text;
@@ -20,14 +21,16 @@ public sealed class DlgTablespace : VentanaBase
     public long NextMb => decimal.ToInt64(_numNext.Value);
     public long MaxMb => decimal.ToInt64(_numMax.Value);
 
-    public DlgTablespace(string rutaSugerida, string directorioPermitido)
+    public DlgTablespace(string rutaSugerida, string directorioPermitido, long maximoMb)
     {
+        _maximoMb = maximoMb;
         Text = "Crear tablespace";
         StartPosition = FormStartPosition.CenterParent;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = MinimizeBox = false;
         ClientSize = new Size(600, 355);
         _txtRuta = new TextBox { Width = 430, Text = rutaSugerida, Tag = directorioPermitido };
+        _numInicial.Maximum = _numNext.Maximum = _numMax.Maximum = maximoMb;
 
         var contenido = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(24), ColumnCount = 2, AutoScroll = true };
         contenido.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 145));
@@ -40,8 +43,10 @@ public sealed class DlgTablespace : VentanaBase
         Fila(contenido, 5, "MAXSIZE (MB)", _numMax);
         contenido.Controls.Add(_lblError, 1, 6);
 
-        var btnCrear = Tema.Boton("Crear", primario: true, icono: "\uE710") { DialogResult = DialogResult.OK };
-        var btnCancelar = Tema.Boton("Cancelar") { DialogResult = DialogResult.Cancel };
+        var btnCrear = Tema.Boton("Crear", primario: true, icono: "\uE710");
+        btnCrear.DialogResult = DialogResult.OK;
+        var btnCancelar = Tema.Boton("Cancelar");
+        btnCancelar.DialogResult = DialogResult.Cancel;
         var pie = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 58, FlowDirection = FlowDirection.RightToLeft, Padding = new Padding(16, 8, 16, 8) };
         pie.Controls.AddRange([btnCrear, btnCancelar]);
         Controls.Add(contenido);
@@ -57,10 +62,10 @@ public sealed class DlgTablespace : VentanaBase
         if (DialogResult != DialogResult.OK) return;
         try
         {
-            DdlTablespaces.ValidarNombre(Nombre);
-            DdlTablespaces.ValidarTamano(InicialMb, "tamaño inicial");
+            DdlTablespaces.ValidarNombrePrueba(Nombre);
+            DdlTablespaces.ValidarTamano(InicialMb, "tamaño inicial", _maximoMb);
             DdlTablespaces.ValidarRutaDatafile(Ruta, directorio, verificarSistemaArchivos: false);
-            if (Autoextend) DdlTablespaces.ValidarAutoextend(InicialMb, NextMb, MaxMb);
+            if (Autoextend) DdlTablespaces.ValidarAutoextend(InicialMb, NextMb, MaxMb, _maximoMb);
         }
         catch (ArgumentException ex)
         {

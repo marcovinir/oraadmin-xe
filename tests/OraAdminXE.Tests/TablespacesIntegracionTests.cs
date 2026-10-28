@@ -85,6 +85,12 @@ public class TablespacesIntegracionTests : IAsyncLifetime
         Assert.False(string.IsNullOrWhiteSpace(ruta));
         var destinoOmg = await _bd.EscalarAsync(SqlTablespaces.DestinoOracleManagedFiles);
         Assert.True(destinoOmg is null or string);
+        var blockSize = Convert.ToInt64(await _bd.EscalarAsync(SqlTablespaces.BloquePredeterminado));
+        Assert.True(blockSize > 0);
+        var dependencias = await _bd.ConsultarAsync(SqlTablespaces.DependenciasEliminar, Parametro.De("tablespace", "USERS"));
+        Assert.Single(dependencias.Rows);
+        Assert.All(["SEGMENTOS", "USUARIOS_ASIGNADOS", "CUOTAS", "PREDETERMINADOS_PDB", "OBJETOS_ASIGNADOS"],
+            columna => Assert.True(dependencias.Columns.Contains(columna)));
         var archivos = await _bd.ConsultarAsync(SqlTablespaces.Archivos, Parametro.De("tablespace", "USERS"));
         var fila = archivos.AsEnumerable().First();
         var exacto = await _bd.ConsultarAsync(SqlTablespaces.MetadatosDatafile,
