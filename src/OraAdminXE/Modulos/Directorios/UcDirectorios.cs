@@ -10,11 +10,13 @@ namespace OraAdminXE.Modulos.Directorios;
 public partial class UcDirectorios : ModuloBase
 {
     private readonly UcObjetosDirectorios _objetos = new();
+    private readonly UcArchivosDirectorios _archivos = new();
 
     public UcDirectorios()
     {
         InitializeComponent();
         pestanas.Agregar("Objetos DIRECTORY", _objetos);
+        pestanas.Agregar("Archivos", _archivos);
         pestanas.SeleccionCambiada += async (_, _) => await CargarPestanaAsync();
     }
 
@@ -29,6 +31,7 @@ public partial class UcDirectorios : ModuloBase
     private Task CargarPestanaAsync() => pestanas.Seleccionada switch
     {
         0 => _objetos.CargarAsync(),
+        1 => _archivos.CargarAsync(),
         _ => Task.CompletedTask
     };
 }
