@@ -9,12 +9,13 @@ namespace OraAdminXE.Modulos.Auditoria;
 public partial class UcAuditoria : ModuloBase
 {
     private readonly UcPoliticasAuditoria _politicas = new();
+    private readonly UcPistaAuditoria _pista = new();
 
     public UcAuditoria()
     {
         InitializeComponent();
         pestanas.Agregar("Políticas", _politicas);
-        // Issue #20 agrega aquí UcPistaAuditoria sin cambiar la pestaña de políticas.
+        pestanas.Agregar("Pista de auditoría", _pista);
         pestanas.SeleccionCambiada += async (_, _) => await CargarPestanaAsync();
     }
 
@@ -22,7 +23,10 @@ public partial class UcAuditoria : ModuloBase
 
     public override Task AlActivarAsync() => CargarPestanaAsync();
 
-    private Task CargarPestanaAsync() => pestanas.Seleccionada == 0
-        ? _politicas.CargarAsync()
-        : Task.CompletedTask;
+    private Task CargarPestanaAsync() => pestanas.Seleccionada switch
+    {
+        0 => _politicas.CargarAsync(),
+        1 => _pista.CargarAsync(),
+        _ => Task.CompletedTask
+    };
 }
