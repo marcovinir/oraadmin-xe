@@ -15,6 +15,7 @@ public partial class UcTablespaces : ModuloBase
     private readonly SemaphoreSlim _cargaArchivos = new(1, 1);
     private readonly HashSet<string> _privilegios = new(StringComparer.OrdinalIgnoreCase);
     private bool _cargando;
+    private int _cargasArchivosEnCurso;
     private bool _operacion;
     private bool _enXepdb1;
     private int _solicitudArchivos;
@@ -66,8 +67,7 @@ public partial class UcTablespaces : ModuloBase
 
         var seleccionAnterior = _tablespaceSeleccionado;
         _cargando = true;
-        btnRefrescar.Enabled = false;
-        UseWaitCursor = true;
+        ActualizarEstadoInteraccion();
         Tema.Cargando(grdTablespaces, true);
         try
         {
@@ -96,14 +96,10 @@ public partial class UcTablespaces : ModuloBase
         }
         finally
         {
-            if (PuedeActualizarUi)
-            {
-                Tema.Cargando(grdTablespaces, false);
-                btnRefrescar.Enabled = true;
-                UseWaitCursor = false;
-                ActualizarAcciones();
-            }
             _cargando = false;
+            if (PuedeActualizarUi)
+                Tema.Cargando(grdTablespaces, false);
+            ActualizarEstadoInteraccion();
         }
     }
 
@@ -129,6 +125,8 @@ public partial class UcTablespaces : ModuloBase
 
     private async Task CargarArchivosAsync(string tablespace, int solicitud)
     {
+        _cargasArchivosEnCurso++;
+        ActualizarEstadoInteraccion();
         await _cargaArchivos.WaitAsync();
         try
         {
@@ -153,6 +151,8 @@ public partial class UcTablespaces : ModuloBase
                 ActualizarAcciones();
             }
             _cargaArchivos.Release();
+            _cargasArchivosEnCurso--;
+            ActualizarEstadoInteraccion();
         }
     }
 
@@ -339,8 +339,7 @@ public partial class UcTablespaces : ModuloBase
     {
         if (!Dialogos.ConfirmarSql(this, titulo, sql, destructiva)) return;
         _operacion = true;
-        ActualizarAcciones();
-        UseWaitCursor = true;
+        ActualizarEstadoInteraccion();
         try
         {
             await DdlTablespaces.EjecutarTrasRevalidarAsync(
@@ -352,11 +351,10 @@ public partial class UcTablespaces : ModuloBase
         catch (Exception ex) { Dialogos.Error(this, ex); }
         finally
         {
-            UseWaitCursor = false;
             _operacion = false;
             // DDL es commit implícito; incluso ante error se releen metadatos, sin DDL compensatorio.
             await CargarAsync();
-            ActualizarAcciones();
+            ActualizarEstadoInteraccion();
         }
     }
 
@@ -510,9 +508,11 @@ public partial class UcTablespaces : ModuloBase
     {
         var ts = TablespaceActual();
         var archivo = DatafileActual();
-        var elegible = ts is not null && _enXepdb1 && !_operacion && DdlTablespaces.PuedeAdministrar(ts.Nombre, ts.Contenido);
+        var ocupado = _cargando || _operacion || _cargasArchivosEnCurso > 0;
+        var elegible = ts is not null && _enXepdb1 && !ocupado && DdlTablespaces.PuedeAdministrar(ts.Nombre, ts.Contenido);
         var archivoElegible = elegible && archivo is { EsDatafile: true };
-        btnCrear.Enabled = _enXepdb1 && !_operacion && TienePrivilegio("CREATE TABLESPACE");
+        btnRefrescar.Enabled = !ocupado && !string.IsNullOrEmpty(Bd.Usuario);
+        btnCrear.Enabled = _enXepdb1 && !ocupado && TienePrivilegio("CREATE TABLESPACE");
         btnAgregarArchivo.Enabled = elegible && TienePrivilegio("ALTER TABLESPACE") && ts!.Estado == "ONLINE";
         btnRedimensionar.Enabled = archivoElegible && TienePrivilegio("ALTER DATABASE");
         btnAutoextend.Enabled = archivoElegible && TienePrivilegio("ALTER DATABASE");
@@ -522,6 +522,13 @@ public partial class UcTablespaces : ModuloBase
         btnSoloLectura.Enabled = puedeEstado && DdlTablespaces.TransicionValida(ts!.Estado, EstadoTablespace.SoloLectura);
         btnLecturaEscritura.Enabled = puedeEstado && DdlTablespaces.TransicionValida(ts!.Estado, EstadoTablespace.LecturaEscritura);
         btnEliminar.Enabled = elegible && TienePrivilegio("DROP TABLESPACE") && DdlTablespaces.FueCreadoEnSesion(ts!.Nombre);
+    }
+
+    private void ActualizarEstadoInteraccion()
+    {
+        if (!PuedeActualizarUi) return;
+        UseWaitCursor = _cargando || _operacion || _cargasArchivosEnCurso > 0;
+        ActualizarAcciones();
     }
 
     private sealed record TablespaceSeleccion(string Nombre, string Contenido, string Estado);
@@ -570,6 +577,7 @@ public partial class UcTablespaces : ModuloBase
             if (columna is null) continue;
             columna.HeaderText = encabezado;
             columna.FillWeight = peso;
+            if (nombre == "FILE_ID") columna.Visible = false;
             if (nombre is "FILE_ID" or "TOTAL_MB" or "USADO_MB" or "LIBRE_MB" or "TAMANO_MB" or "MAX_MB")
                 columna.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
         }

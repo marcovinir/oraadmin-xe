@@ -34,9 +34,9 @@ public sealed class UcPoliticasAuditoria : UserControl
             boton.Margin = new Padding(0, 4, 8, 4);
 
         var acciones = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false };
-        acciones.Controls.AddRange([_btnCrear, _btnActivar, _btnDesactivar, _btnEliminar, _btnLogon]);
+        acciones.Controls.AddRange([_btnCrear, _btnActivar, _btnDesactivar, _btnLogon]);
         var refrescar = new FlowLayoutPanel { Dock = DockStyle.Right, AutoSize = true, FlowDirection = FlowDirection.RightToLeft };
-        refrescar.Controls.Add(_btnRefrescar);
+        refrescar.Controls.AddRange([_btnEliminar, _btnRefrescar]);
         var barra = new Panel { Dock = DockStyle.Top, Height = 48 };
         barra.Controls.Add(acciones);
         barra.Controls.Add(refrescar);

@@ -25,8 +25,8 @@ partial class UcDirectorios
         // lblTitulo
         //
         lblTitulo.AutoSize = true;
-        lblTitulo.Font = new Font("Segoe UI Semibold", 16F);
-        lblTitulo.ForeColor = Color.FromArgb(15, 23, 42);
+        lblTitulo.Font = OraAdminXE.UI.Tema.FuenteTitulo;
+        lblTitulo.ForeColor = OraAdminXE.UI.Tema.Texto;
         lblTitulo.Location = new Point(24, 20);
         lblTitulo.Name = "lblTitulo";
         lblTitulo.Text = "Directorios y archivos";
@@ -34,7 +34,7 @@ partial class UcDirectorios
         // lblDescripcion
         //
         lblDescripcion.AutoSize = true;
-        lblDescripcion.ForeColor = Color.FromArgb(100, 116, 139);
+        lblDescripcion.ForeColor = OraAdminXE.UI.Tema.TextoSecundario;
         lblDescripcion.Location = new Point(26, 58);
         lblDescripcion.Name = "lblDescripcion";
         lblDescripcion.Text = "Objetos DIRECTORY de Oracle y su registro para respaldos";
