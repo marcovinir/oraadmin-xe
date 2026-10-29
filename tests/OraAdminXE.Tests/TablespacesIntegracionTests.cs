@@ -70,4 +70,32 @@ public class TablespacesIntegracionTests : IAsyncLifetime
             Assert.Equal("ONLINE", fila.Field<string>("ESTADO"));
         });
     }
+
+    [OracleFact]
+    public async Task Metadatos_administrativos_son_solo_lectura_y_exactos()
+    {
+        var privilegios = await _bd.ConsultarAsync(SqlTablespaces.PrivilegiosSesion);
+        Assert.Contains(privilegios.AsEnumerable(), fila => fila.Field<string>("CON_NAME") == "XEPDB1");
+
+        var users = await _bd.ConsultarAsync(SqlTablespaces.MetadatosTablespace, Parametro.De("tablespace", "USERS"));
+        Assert.Single(users.Rows);
+        Assert.Equal("PERMANENT", users.Rows[0].Field<string>("CONTENTS"));
+
+        var ruta = await _bd.EscalarAsync(SqlTablespaces.DatafileUsers) as string;
+        Assert.False(string.IsNullOrWhiteSpace(ruta));
+        var destinoOmg = await _bd.EscalarAsync(SqlTablespaces.DestinoOracleManagedFiles);
+        Assert.True(destinoOmg is null or string);
+        var blockSize = Convert.ToInt64(await _bd.EscalarAsync(SqlTablespaces.BloquePredeterminado));
+        Assert.True(blockSize > 0);
+        var dependencias = await _bd.ConsultarAsync(SqlTablespaces.DependenciasEliminar, Parametro.De("tablespace", "USERS"));
+        Assert.Single(dependencias.Rows);
+        Assert.All(["SEGMENTOS", "USUARIOS_ASIGNADOS", "CUOTAS", "PREDETERMINADOS_PDB", "OBJETOS_ASIGNADOS"],
+            columna => Assert.True(dependencias.Columns.Contains(columna)));
+        var archivos = await _bd.ConsultarAsync(SqlTablespaces.Archivos, Parametro.De("tablespace", "USERS"));
+        var fila = archivos.AsEnumerable().First();
+        var exacto = await _bd.ConsultarAsync(SqlTablespaces.MetadatosDatafile,
+            Parametro.De("tablespace", "USERS"), Parametro.De("file_id", Convert.ToInt64(fila["FILE_ID"])), Parametro.De("file_name", fila.Field<string>("FILE_NAME")));
+        Assert.Single(exacto.Rows);
+        Assert.True(Convert.ToInt64(exacto.Rows[0]["BYTES"]) > 0);
+    }
 }
