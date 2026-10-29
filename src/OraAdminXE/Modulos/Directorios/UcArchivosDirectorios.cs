@@ -38,13 +38,19 @@ public sealed class UcArchivosDirectorios : UserControl
         _btnEliminar.Estilo = EstiloBoton.Peligro;
         _btnMarcar.Estilo = EstiloBoton.Peligro;
 
-        var barraIzquierda = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = true, AutoScroll = true };
-        barraIzquierda.Controls.AddRange([new Label { Text = "DIRECTORY activo:", AutoSize = true, Margin = new Padding(0, 10, 8, 0) }, _cboDirectorios, _btnLog, _btnRenombrar, _btnEliminar, _btnAbrir]);
-        var barraDerecha = new FlowLayoutPanel { Dock = DockStyle.Right, AutoSize = true, FlowDirection = FlowDirection.RightToLeft, WrapContents = false };
-        barraDerecha.Controls.Add(_btnRefrescar);
-        var barra = new Panel { Dock = DockStyle.Top, Height = 58 };
-        barra.Controls.Add(barraIzquierda);
-        barra.Controls.Add(barraDerecha);
+        var selector = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false, AutoScroll = true };
+        selector.Controls.AddRange([new Label { Text = "DIRECTORY activo:", AutoSize = true, Margin = new Padding(0, 10, 8, 0) }, _cboDirectorios]);
+        var acciones = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false, AutoScroll = true, Padding = new Padding(0, 2, 0, 2) };
+        acciones.Controls.AddRange([_btnLog, _btnRenombrar, _btnEliminar, _btnAbrir]);
+        var barra = new TableLayoutPanel { Dock = DockStyle.Top, Height = 94, ColumnCount = 2, RowCount = 2, Padding = new Padding(0, 0, 0, 4) };
+        barra.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        barra.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        barra.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+        barra.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+        barra.Controls.Add(selector, 0, 0);
+        barra.Controls.Add(_btnRefrescar, 1, 0);
+        barra.Controls.Add(acciones, 0, 1);
+        barra.SetColumnSpan(acciones, 2);
 
         ConfigurarGrilla(_grilla, "No hay .dmp ni .log en el DIRECTORY seleccionado.");
         ConfigurarGrilla(_huerfanos, "No hay respaldos COMPLETADO con DMP ausente.");
@@ -80,7 +86,7 @@ public sealed class UcArchivosDirectorios : UserControl
     private void ConfigurarGrilla(DataGridView grilla, string vacio)
     {
         Tema.AplicarGrilla(grilla);
-        grilla.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+        grilla.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
         grilla.MultiSelect = false;
         grilla.RowTemplate.Height = 34;
         grilla.ShowCellToolTips = true;
@@ -208,6 +214,19 @@ public sealed class UcArchivosDirectorios : UserControl
         {
             col.Visible = orden.Contains(col.Name);
             col.HeaderText = col.Name switch { "MB" => "Tamaño MB", "MODIFICADO" => "Modificado", "ASOCIACION" => "Catálogo", "ADVERTENCIA" => "Aviso", "ARCHIVO_DUMP" => "DMP esperado", "NOMBRE_JOB" => "Job", _ => col.Name.Replace('_', ' ') };
+            col.Width = col.Name switch
+            {
+                "NOMBRE" or "ARCHIVO_DUMP" => 340,
+                "ADVERTENCIA" => 280,
+                "NOMBRE_JOB" => 220,
+                "MODIFICADO" => 135,
+                "ASOCIACION" => 115,
+                "ESTADO" => 120,
+                "ID_RESPALDO" => 105,
+                "TIPO" => 75,
+                "MB" => 95,
+                _ => 130
+            };
             if (col.Name == "MODIFICADO") col.DefaultCellStyle.Format = "dd/MM/yy HH:mm";
             if (col.Name == "MB") { col.DefaultCellStyle.Format = "0.00"; col.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight; }
         }

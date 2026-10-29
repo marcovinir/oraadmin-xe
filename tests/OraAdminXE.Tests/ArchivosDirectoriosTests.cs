@@ -67,6 +67,18 @@ public class ArchivosDirectoriosTests
     }
 
     [Theory]
+    [InlineData(EstadoInspeccionDirectorio.Inexistente, "COMPLETADO", false, false, false, false)]
+    [InlineData(EstadoInspeccionDirectorio.Inseguro, "COMPLETADO", false, false, false, false)]
+    [InlineData(EstadoInspeccionDirectorio.ErrorIo, "COMPLETADO", false, false, false, false)]
+    [InlineData(EstadoInspeccionDirectorio.Correcto, "ERROR", false, false, false, false)]
+    [InlineData(EstadoInspeccionDirectorio.Correcto, "COMPLETADO", false, true, false, false)]
+    [InlineData(EstadoInspeccionDirectorio.Correcto, "COMPLETADO", false, false, true, false)]
+    [InlineData(EstadoInspeccionDirectorio.Correcto, "COMPLETADO", false, false, false, true)]
+    public void Reconciliacion_bloquea_cualquier_estado_o_job_no_verificado(EstadoInspeccionDirectorio inspeccion, string estado,
+        bool dataPump, bool scheduler, bool restauracion, bool esperado) =>
+        Assert.Equal(esperado, ArchivosDirectorios.PuedeReconciliarAusente(inspeccion, estado, false, dataPump, scheduler, restauracion));
+
+    [Theory]
     [InlineData(@"\\servidor\respaldos")]
     [InlineData(@"C:\")]
     [InlineData(@"C:\respaldos\..\otro")]
@@ -101,6 +113,7 @@ public class ArchivosDirectoriosTests
         Assert.Contains("id_directorio = :id_directorio", SqlDirectorios.RenombrarDumpCatalogo);
         Assert.Contains("estado = 'COMPLETADO'", SqlDirectorios.MarcarRespaldoEliminado);
         Assert.Contains("UPPER(archivo_dump) = UPPER(:archivo_dump)", SqlDirectorios.MarcarRespaldoEliminado);
+        Assert.DoesNotContain("FREMOVE", SqlDirectorios.MarcarRespaldoEliminado, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
