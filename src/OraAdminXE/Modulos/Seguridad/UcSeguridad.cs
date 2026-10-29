@@ -5,20 +5,20 @@ namespace OraAdminXE.Modulos.Seguridad;
 
 /// <summary>
 /// Seguridad de usuarios: pestañas Usuarios (#8, <see cref="UcUsuarios"/>), Roles y privilegios (#9, <see cref="UcRoles"/>)
-/// y Perfiles (#10, P2). Cada pestaña es un UserControl aparte para que no haya conflictos entre quienes las programan.
+/// y Perfiles (#10, P2, <see cref="UcPerfiles"/>). Cada pestaña es un UserControl aparte para que no haya conflictos entre quienes las programan.
 /// </summary>
 public partial class UcSeguridad : ModuloBase
 {
     private readonly UcUsuarios _usuarios = new();
     private readonly UcRoles _roles = new();
+    private readonly UcPerfiles _perfiles = new();
 
     public UcSeguridad()
     {
         InitializeComponent();
         pestanas.Agregar("Usuarios", _usuarios);
         pestanas.Agregar("Roles y privilegios", _roles);
-        // Issue #10 (P2): reemplazar esta línea por  pestanas.Agregar("Perfiles", new UcPerfiles());
-        pestanas.Agregar("Perfiles", new Label { Text = "En construcción (issue #10).", ForeColor = Tema.TextoSecundario, Padding = new Padding(20) });
+        pestanas.Agregar("Perfiles", _perfiles);
         pestanas.SeleccionCambiada += async (_, _) => await CargarPestanaAsync();
     }
 
@@ -31,6 +31,7 @@ public partial class UcSeguridad : ModuloBase
     {
         0 => _usuarios.CargarAsync(),
         1 => _roles.CargarAsync(),
+        2 => _perfiles.CargarAsync(),
         _ => Task.CompletedTask
     };
 }
