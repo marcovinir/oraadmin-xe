@@ -19,6 +19,7 @@ partial class UcDirectorios
     {
         lblTitulo = new Label();
         lblDescripcion = new Label();
+        pestanas = new OraAdminXE.UI.Pestanas();
         SuspendLayout();
         //
         // lblTitulo
@@ -36,7 +37,14 @@ partial class UcDirectorios
         lblDescripcion.ForeColor = Color.FromArgb(100, 116, 139);
         lblDescripcion.Location = new Point(26, 58);
         lblDescripcion.Name = "lblDescripcion";
-        lblDescripcion.Text = "Objetos DIRECTORY y archivos .dmp/.log en disco (en construcción)";
+        lblDescripcion.Text = "Objetos DIRECTORY de Oracle y su registro para respaldos";
+        //
+        // pestanas
+        //
+        pestanas.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+        pestanas.Location = new Point(24, 88);
+        pestanas.Name = "pestanas";
+        pestanas.Size = new Size(1052, 588);
         //
         // UcDirectorios
         //
@@ -44,6 +52,7 @@ partial class UcDirectorios
         AutoScaleMode = AutoScaleMode.Font;
         Controls.Add(lblTitulo);
         Controls.Add(lblDescripcion);
+        Controls.Add(pestanas);
         Name = "UcDirectorios";
         Size = new Size(1100, 700);
         ResumeLayout(false);
@@ -54,4 +63,5 @@ partial class UcDirectorios
 
     private Label lblTitulo;
     private Label lblDescripcion;
+    private OraAdminXE.UI.Pestanas pestanas;
 }
