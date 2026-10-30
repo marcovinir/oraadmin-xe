@@ -154,6 +154,10 @@ Ramas `feature/<módulo>` que salen de **`develop`** (la rama de integración), 
 | Presentación: funcionalidad | 70 % |
 | Manual de usuario (máx. 4 páginas) | 10 % |
 
+## Licencia
+
+Distribuido bajo la licencia [MIT](LICENSE).
+
 ---
 
 <div align="center">
