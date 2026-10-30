@@ -19,6 +19,7 @@ partial class UcTuning
     {
         lblTitulo = new Label();
         lblDescripcion = new Label();
+        pestanas = new OraAdminXE.UI.Pestanas();
         SuspendLayout();
         //
         // lblTitulo
@@ -36,7 +37,15 @@ partial class UcTuning
         lblDescripcion.ForeColor = Color.FromArgb(100, 116, 139);
         lblDescripcion.Location = new Point(26, 58);
         lblDescripcion.Name = "lblDescripcion";
-        lblDescripcion.Text = "Planes de ejecución, estadísticas e índices (en construcción)";
+        lblDescripcion.Text = "Planes de ejecución, estadísticas e índices";
+        //
+        // pestanas (las pestañas se agregan en el constructor de UcTuning)
+        //
+        pestanas.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+        pestanas.Location = new Point(24, 88);
+        pestanas.Name = "pestanas";
+        pestanas.Size = new Size(1052, 588);
+        pestanas.TabIndex = 0;
         //
         // UcTuning
         //
@@ -44,6 +53,7 @@ partial class UcTuning
         AutoScaleMode = AutoScaleMode.Font;
         Controls.Add(lblTitulo);
         Controls.Add(lblDescripcion);
+        Controls.Add(pestanas);
         Name = "UcTuning";
         Size = new Size(1100, 700);
         ResumeLayout(false);
@@ -54,4 +64,5 @@ partial class UcTuning
 
     private Label lblTitulo;
     private Label lblDescripcion;
+    private OraAdminXE.UI.Pestanas pestanas;
 }
