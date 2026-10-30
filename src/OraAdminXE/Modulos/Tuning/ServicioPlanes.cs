@@ -15,6 +15,9 @@ public sealed record ResultadoPlan(
     long? FilasDevueltas,
     TimeSpan? Tiempo);
 
+/// <summary>Comparación de costos antes/después: <see cref="Valor"/> «173 → 107», <see cref="Detalle"/> «−38 %».</summary>
+public sealed record ResumenCosto(string Valor, string Detalle, bool Mejora, bool Empeora);
+
 /// <summary>
 /// Planes de ejecución estimado (EXPLAIN PLAN) y real (GATHER_PLAN_STATISTICS + DISPLAY_CURSOR).
 /// Ambos necesitan que todas las sentencias corran en la MISMA sesión de Oracle,
@@ -205,6 +208,21 @@ public static class ServicioPlanes
             await using var lector = await cmd.ExecuteReaderAsync();
             return await lector.ReadAsync() && !lector.IsDBNull(0) ? lector.GetString(0) : null;
         });
+
+    /// <summary>
+    /// Compara el costo del plan ANTES con el de DESPUÉS. Null si alguno no tiene costo (los planes reales no lo traen).
+    /// </summary>
+    public static ResumenCosto? CompararCostos(ResultadoPlan antes, ResultadoPlan despues)
+    {
+        if (antes.Costo is not { } a || despues.Costo is not { } d) return null;
+        var valor = $"{a:0} → {d:0}";
+        if (d == a) return new ResumenCosto(valor, "sin cambio", false, false);
+        if (a == 0) return new ResumenCosto(valor, d > a ? "sube" : "baja", d < a, d > a);
+        var pct = Math.Round((d - a) / a * 100m, MidpointRounding.AwayFromZero);
+        var texto = pct == 0 ? (d < a ? "−<1 %" : "+<1 %")
+            : pct < 0 ? $"−{-pct:0} %" : $"+{pct:0} %";
+        return new ResumenCosto(valor, texto, d < a, d > a);
+    }
 
     private static OracleCommand Comando(OracleConnection conexion, string sql, params OracleParameter[] parametros)
     {

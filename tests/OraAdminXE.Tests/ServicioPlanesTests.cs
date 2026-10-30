@@ -88,4 +88,22 @@ public class ServicioPlanesTests
     [Fact]
     public void LineaOperacionPrincipal_devuelve_la_linea_a_resaltar() =>
         Assert.Contains("TABLE ACCESS FULL", ServicioPlanes.LineaOperacionPrincipal(PlanCompleto));
+
+    private static ResultadoPlan ConCosto(decimal? costo) => new("", costo, null, null, null, null);
+
+    [Fact]
+    public void CompararCostos_baja_de_173_a_107() =>
+        Assert.Equal(new ResumenCosto("173 → 107", "−38 %", true, false), ServicioPlanes.CompararCostos(ConCosto(173), ConCosto(107)));
+
+    [Fact]
+    public void CompararCostos_sube() =>
+        Assert.Equal(new ResumenCosto("100 → 150", "+50 %", false, true), ServicioPlanes.CompararCostos(ConCosto(100), ConCosto(150)));
+
+    [Fact]
+    public void CompararCostos_sin_cambio() =>
+        Assert.Equal(new ResumenCosto("50 → 50", "sin cambio", false, false), ServicioPlanes.CompararCostos(ConCosto(50), ConCosto(50)));
+
+    [Fact]
+    public void CompararCostos_sin_costo_es_null() =>
+        Assert.Null(ServicioPlanes.CompararCostos(ConCosto(null), ConCosto(10)));
 }
