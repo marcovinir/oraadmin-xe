@@ -7,18 +7,20 @@ namespace OraAdminXE.Modulos.Performance;
 /// Performance: Sesiones, bloqueos, top SQL, esperas y métricas en vivo.
 /// Pestaña Sesiones y bloqueos (#23, <see cref="UcSesiones"/>).
 /// Pestaña Métricas (#24, <see cref="UcMetricas"/>).
-/// Esperas y memoria (#25).
+/// Pestaña Esperas y memoria (#25, <see cref="UcEsperasMemoria"/>).
 /// </summary>
 public partial class UcPerformance : ModuloBase
 {
     private readonly UcSesiones _sesiones = new();
     private readonly UcMetricas _metricas = new();
+    private readonly UcEsperasMemoria _esperas = new();
 
     public UcPerformance()
     {
         InitializeComponent();
         pestanas.Agregar("Sesiones y bloqueos", _sesiones);
         pestanas.Agregar("Métricas", _metricas);
+        pestanas.Agregar("Esperas y memoria", _esperas);
         pestanas.SeleccionCambiada += (_, _) => CargarPestana();
     }
 
@@ -47,6 +49,11 @@ public partial class UcPerformance : ModuloBase
             case 1:
                 _sesiones.AlDesactivar();
                 _metricas.AlActivar();
+                break;
+            case 2:
+                _sesiones.AlDesactivar();
+                _metricas.AlDesactivar();
+                _esperas.AlActivar();
                 break;
         }
     }
