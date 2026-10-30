@@ -1,6 +1,6 @@
 namespace OraAdminXE.Modulos.Performance;
 
-/// <summary>Consultas de Performance: Sesiones, bloqueos y matar sesión (issue #23).</summary>
+/// <summary>Consultas de Performance: Sesiones, bloqueos, matar sesión y métricas en vivo (issues #23, #24).</summary>
 public static class SqlPerformance
 {
     /// <summary>
@@ -41,4 +41,36 @@ public static class SqlPerformance
     /// <summary>Texto completo de la consulta activa de una sesión.</summary>
     public const string SqlDeSesion =
         "SELECT sql_fulltext FROM v$sql WHERE sql_id = :id AND ROWNUM = 1";
+
+    /// <summary>Valor actual de las métricas del catálogo en v$con_sysmetric (intervalo 60 s, issue #24).</summary>
+    public const string MetricasActuales = """
+        SELECT m.id_metrica, m.nombre, m.unidad, ROUND(s.value, 2) AS valor
+        FROM admin_bd.metrica m
+        JOIN v$con_sysmetric s ON s.metric_name = m.nombre_oracle AND s.group_id = 18
+        ORDER BY m.id_metrica
+        """;
+
+    /// <summary>Inserta una muestra en SNAPSHOT con bind de salida para el ID generado (issue #24).</summary>
+    public const string InsertarSnapshot =
+        "INSERT INTO admin_bd.snapshot (fecha) VALUES (SYSTIMESTAMP) RETURNING id_snapshot INTO :id";
+
+    /// <summary>Inserta los valores de las métricas para una muestra dada (issue #24).</summary>
+    public const string InsertarValoresMetricas = """
+        INSERT INTO admin_bd.valor_metrica (id_snapshot, id_metrica, valor)
+        SELECT :id, m.id_metrica, s.value
+        FROM admin_bd.metrica m
+        JOIN v$con_sysmetric s ON s.metric_name = m.nombre_oracle AND s.group_id = 18
+        """;
+
+    /// <summary>Historial de muestras de una métrica en la última hora (issue #24).</summary>
+    public const string HistorialMetrica = """
+        SELECT s.fecha, v.valor
+        FROM admin_bd.valor_metrica v
+        JOIN admin_bd.snapshot s ON s.id_snapshot = v.id_snapshot
+        WHERE v.id_metrica = :m AND s.fecha > SYSTIMESTAMP - INTERVAL '1' HOUR
+        ORDER BY s.fecha
+        """;
+
+    /// <summary>Borra todo el historial de snapshots (en cascada borra valor_metrica, issue #24).</summary>
+    public const string BorrarHistorial = "DELETE FROM admin_bd.snapshot";
 }
