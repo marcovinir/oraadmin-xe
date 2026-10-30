@@ -40,17 +40,19 @@ public sealed class UcArchivosDirectorios : UserControl
 
         var selector = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false, AutoScroll = true };
         selector.Controls.AddRange([new Label { Text = "DIRECTORY activo:", AutoSize = true, Margin = new Padding(0, 10, 8, 0) }, _cboDirectorios]);
-        var acciones = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false, AutoScroll = true, Padding = new Padding(0, 2, 0, 2) };
-        acciones.Controls.AddRange([_btnLog, _btnRenombrar, _btnEliminar, _btnAbrir]);
+        var acciones = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false };
+        acciones.Controls.AddRange([_btnLog, _btnRenombrar, _btnAbrir]);
+        var accionesDerecha = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, FlowDirection = FlowDirection.RightToLeft, WrapContents = false };
+        accionesDerecha.Controls.AddRange([_btnEliminar, _btnMarcar, _btnRefrescar]);
         var barra = new TableLayoutPanel { Dock = DockStyle.Top, Height = 94, ColumnCount = 2, RowCount = 2, Padding = new Padding(0, 0, 0, 4) };
         barra.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         barra.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         barra.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
         barra.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
         barra.Controls.Add(selector, 0, 0);
-        barra.Controls.Add(_btnRefrescar, 1, 0);
+        barra.SetColumnSpan(selector, 2);
         barra.Controls.Add(acciones, 0, 1);
-        barra.SetColumnSpan(acciones, 2);
+        barra.Controls.Add(accionesDerecha, 1, 1);
 
         ConfigurarGrilla(_grilla, "No hay .dmp ni .log en el DIRECTORY seleccionado.");
         ConfigurarGrilla(_huerfanos, "No hay respaldos COMPLETADO con DMP ausente.");
@@ -104,6 +106,7 @@ public sealed class UcArchivosDirectorios : UserControl
         if (string.IsNullOrEmpty(Bd.Usuario) || _ocupado) return;
         var anterior = DirectorioSeleccionado?.Id;
         _cargando = true;
+        ActualizarEstadoInteraccion();
         try
         {
             var tabla = await Bd.ConsultarAsync(SqlDirectorios.DirectoriosActivosArchivos);
@@ -115,7 +118,7 @@ public sealed class UcArchivosDirectorios : UserControl
             if (_cboDirectorios.SelectedItem is null) Limpiar("No hay DIRECTORY activos que existan en Oracle.");
         }
         catch (Exception ex) { Dialogos.Error(this, ex); }
-        finally { _cargando = false; ActualizarBotones(); }
+        finally { _cargando = false; ActualizarEstadoInteraccion(); }
         if (DirectorioSeleccionado is not null) await CargarArchivosAsync();
     }
 
@@ -123,7 +126,7 @@ public sealed class UcArchivosDirectorios : UserControl
     {
         if (_cargando || _ocupado || DirectorioSeleccionado is not { } directorio) return;
         _cargando = true;
-        UseWaitCursor = true;
+        ActualizarEstadoInteraccion();
         Tema.Cargando(_grilla, true);
         try
         {
@@ -138,9 +141,9 @@ public sealed class UcArchivosDirectorios : UserControl
         finally
         {
             _cargando = false;
-            UseWaitCursor = false;
             Tema.Cargando(_grilla, false);
             ActualizarDetalleYBotones();
+            ActualizarEstadoInteraccion();
         }
     }
 
@@ -253,16 +256,17 @@ public sealed class UcArchivosDirectorios : UserControl
     private void ActualizarBotones()
     {
         var sesion = !string.IsNullOrEmpty(Bd.Usuario);
+        var ocupado = _ocupado || _cargando;
         var correcto = _estadoInspeccion == EstadoInspeccionDirectorio.Correcto && _rutaVerificada is not null;
         var a = ArchivoSeleccionado;
         var dumpMutable = DirectorioSeleccionado is { } directorio && ArchivosDirectorios.EsDirectorioGestionado(directorio.Nombre) &&
                           a?.Asociacion is { Tipo: "DMP", Estado: "COMPLETADO" } && ArchivosDirectorios.EsDump(a.Nombre);
-        _cboDirectorios.Enabled = !_ocupado && sesion;
-        _btnRefrescar.Enabled = !_ocupado && sesion;
-        _btnAbrir.Enabled = !_ocupado && correcto;
-        _btnLog.Enabled = !_ocupado && correcto && a is not null && ArchivosDirectorios.EsLog(a.Nombre) && a.Asociacion is not null;
-        _btnRenombrar.Enabled = _btnEliminar.Enabled = !_ocupado && correcto && dumpMutable;
-        _btnMarcar.Enabled = !_ocupado && correcto && AusenteSeleccionado is not null;
+        _cboDirectorios.Enabled = !ocupado && sesion;
+        _btnRefrescar.Enabled = !ocupado && sesion;
+        _btnAbrir.Enabled = !ocupado && correcto;
+        _btnLog.Enabled = !ocupado && correcto && a is not null && ArchivosDirectorios.EsLog(a.Nombre) && a.Asociacion is not null;
+        _btnRenombrar.Enabled = _btnEliminar.Enabled = !ocupado && correcto && dumpMutable;
+        _btnMarcar.Enabled = !ocupado && correcto && AusenteSeleccionado is not null;
     }
 
     private async Task VerLogAsync()
@@ -371,10 +375,17 @@ public sealed class UcArchivosDirectorios : UserControl
     private async Task EjecutarOcupadoAsync(Func<Task> accion)
     {
         if (_ocupado) return;
-        _ocupado = true; UseWaitCursor = true; ActualizarBotones();
+        _ocupado = true;
+        ActualizarEstadoInteraccion();
         try { await accion(); }
         catch (Exception ex) { Dialogos.Error(this, ex); }
-        finally { _ocupado = false; UseWaitCursor = false; await CargarArchivosAsync(); ActualizarBotones(); }
+        finally { _ocupado = false; await CargarArchivosAsync(); ActualizarEstadoInteraccion(); }
+    }
+
+    private void ActualizarEstadoInteraccion()
+    {
+        UseWaitCursor = _ocupado || _cargando;
+        ActualizarBotones();
     }
 
     private async Task<ContextoOperacion> RevalidarOperacionAsync(ArchivoListado archivo, bool exigirArchivo = true)

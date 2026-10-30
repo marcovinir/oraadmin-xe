@@ -12,7 +12,11 @@ public sealed class UcObjetosDirectorios : UserControl
 {
     private readonly DataGridView _grilla = new() { Dock = DockStyle.Fill };
     private readonly DataGridView _privilegios = new() { Dock = DockStyle.Fill };
-    private readonly Label _lblPie = new() { Dock = DockStyle.Fill, ForeColor = Tema.TextoSecundario, TextAlign = ContentAlignment.MiddleLeft };
+    private readonly Label _lblPie = new()
+    {
+        Dock = DockStyle.Fill, AutoSize = false, ForeColor = Tema.TextoSecundario,
+        Padding = new Padding(0, 4, 0, 4), TextAlign = ContentAlignment.TopLeft
+    };
     private readonly BotonPlano _btnCrear = Tema.Boton("Crear DIRECTORY…", primario: true, icono: "");
     private readonly BotonPlano _btnRegistrar = Tema.Boton("Registrar existente", icono: "");
     private readonly BotonPlano _btnOtorgar = Tema.Boton("Otorgar READ/WRITE…", icono: "");
@@ -37,9 +41,9 @@ public sealed class UcObjetosDirectorios : UserControl
         _btnEliminar.Estilo = EstiloBoton.Peligro;
 
         var izquierda = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false };
-        izquierda.Controls.AddRange([_btnCrear, _btnRegistrar, _btnOtorgar, _btnEliminar]);
+        izquierda.Controls.AddRange([_btnCrear, _btnRegistrar, _btnOtorgar]);
         var derecha = new FlowLayoutPanel { Dock = DockStyle.Right, AutoSize = true, FlowDirection = FlowDirection.RightToLeft, WrapContents = false };
-        derecha.Controls.Add(_btnRefrescar);
+        derecha.Controls.AddRange([_btnEliminar, _btnRefrescar]);
         var barra = new Panel { Dock = DockStyle.Top, Height = 48 };
         barra.Controls.Add(izquierda);
         barra.Controls.Add(derecha);
@@ -63,7 +67,7 @@ public sealed class UcObjetosDirectorios : UserControl
         separador.Panel1.Controls.Add(_grilla);
         separador.Panel2.Controls.Add(panelPrivilegios);
 
-        var pie = new Panel { Dock = DockStyle.Bottom, Height = 32 };
+        var pie = new Panel { Dock = DockStyle.Bottom, Height = 48 };
         pie.Controls.Add(_lblPie);
         Controls.Add(separador);
         Controls.Add(pie);
@@ -120,7 +124,7 @@ public sealed class UcObjetosDirectorios : UserControl
     {
         if (string.IsNullOrEmpty(Bd.Usuario)) return;
         _cargando = true;
-        UseWaitCursor = true;
+        ActualizarEstadoInteraccion();
         Tema.Cargando(_grilla, true);
         try
         {
@@ -151,10 +155,9 @@ public sealed class UcObjetosDirectorios : UserControl
         finally
         {
             _cargando = false;
-            UseWaitCursor = false;
             Tema.Cargando(_grilla, false);
-            ActualizarBotones();
             await CargarPrivilegiosAsync();
+            ActualizarEstadoInteraccion();
         }
     }
 
@@ -170,7 +173,7 @@ public sealed class UcObjetosDirectorios : UserControl
         {
             ["DIRECTORY_NAME"] = ("DIRECTORY", 18), ["DIRECTORY_PATH"] = ("Ruta del servidor", 39),
             ["REGISTRADO"] = ("Registrado", 11), ["ACTIVO"] = ("Activo", 9), ["CARPETA_LOCAL"] = ("Carpeta local", 12),
-            ["ORIGIN_CON_ID"] = ("Origen", 8), ["FECHA_REGISTRO"] = ("Registrado el", 14)
+            ["FECHA_REGISTRO"] = ("Registrado el", 14)
         };
         foreach (DataGridViewColumn columna in _grilla.Columns)
         {
@@ -199,6 +202,7 @@ public sealed class UcObjetosDirectorios : UserControl
             return;
         }
         _cargandoPrivilegios = true;
+        ActualizarEstadoInteraccion();
         try
         {
             do
@@ -230,6 +234,7 @@ public sealed class UcObjetosDirectorios : UserControl
         {
             Tema.Cargando(_privilegios, false);
             _cargandoPrivilegios = false;
+            ActualizarEstadoInteraccion();
         }
     }
 
@@ -237,11 +242,12 @@ public sealed class UcObjetosDirectorios : UserControl
     {
         var fila = Seleccionado;
         var modificable = fila is not null && Registrado(fila) && Activo(fila) && EsPropiedadVerificada(fila);
-        _btnCrear.Enabled = !_ocupado && !string.IsNullOrEmpty(Bd.Usuario);
-        _btnRefrescar.Enabled = !_ocupado && !string.IsNullOrEmpty(Bd.Usuario);
-        _btnRegistrar.Enabled = !_ocupado && fila is not null && (!Registrado(fila) || !Activo(fila));
-        _btnOtorgar.Enabled = !_ocupado && modificable;
-        _btnEliminar.Enabled = !_ocupado && modificable;
+        var ocupado = _ocupado || _cargando || _cargandoPrivilegios;
+        _btnCrear.Enabled = !ocupado && !string.IsNullOrEmpty(Bd.Usuario);
+        _btnRefrescar.Enabled = !ocupado && !string.IsNullOrEmpty(Bd.Usuario);
+        _btnRegistrar.Enabled = !ocupado && fila is not null && (!Registrado(fila) || !Activo(fila));
+        _btnOtorgar.Enabled = !ocupado && modificable;
+        _btnEliminar.Enabled = !ocupado && modificable;
     }
 
     private async Task CrearAsync()
@@ -439,15 +445,19 @@ public sealed class UcObjetosDirectorios : UserControl
     {
         if (_ocupado) return;
         _ocupado = true;
-        UseWaitCursor = true;
-        ActualizarBotones();
+        ActualizarEstadoInteraccion();
         try { await accion(); }
         catch (Exception ex) { Dialogos.Error(this, ex); }
         finally
         {
             _ocupado = false;
-            UseWaitCursor = false;
-            ActualizarBotones();
+            ActualizarEstadoInteraccion();
         }
+    }
+
+    private void ActualizarEstadoInteraccion()
+    {
+        UseWaitCursor = _ocupado || _cargando || _cargandoPrivilegios;
+        ActualizarBotones();
     }
 }

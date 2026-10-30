@@ -20,7 +20,10 @@ partial class UcTablespaces
         lblTitulo = new Label();
         lblDescripcion = new Label();
         btnRefrescar = new OraAdminXE.UI.BotonPlano();
-        pnlAcciones = new FlowLayoutPanel();
+        pnlAcciones = new TableLayoutPanel();
+        flpAcciones = new FlowLayoutPanel();
+        flpAccionesEstado = new FlowLayoutPanel();
+        flpAccionesPeligro = new FlowLayoutPanel();
         btnCrear = new OraAdminXE.UI.BotonPlano();
         btnAgregarArchivo = new OraAdminXE.UI.BotonPlano();
         btnRedimensionar = new OraAdminXE.UI.BotonPlano();
@@ -42,8 +45,8 @@ partial class UcTablespaces
         // lblTitulo
         //
         lblTitulo.AutoSize = true;
-        lblTitulo.Font = new Font("Segoe UI Semibold", 16F);
-        lblTitulo.ForeColor = Color.FromArgb(15, 23, 42);
+        lblTitulo.Font = OraAdminXE.UI.Tema.FuenteTitulo;
+        lblTitulo.ForeColor = OraAdminXE.UI.Tema.Texto;
         lblTitulo.Location = new Point(24, 20);
         lblTitulo.Name = "lblTitulo";
         lblTitulo.Text = "Tablespaces";
@@ -51,7 +54,7 @@ partial class UcTablespaces
         // lblDescripcion
         //
         lblDescripcion.AutoSize = true;
-        lblDescripcion.ForeColor = Color.FromArgb(100, 116, 139);
+        lblDescripcion.ForeColor = OraAdminXE.UI.Tema.TextoSecundario;
         lblDescripcion.Location = new Point(26, 58);
         lblDescripcion.Name = "lblDescripcion";
         lblDescripcion.Text = "Uso actual y archivos físicos de tablespaces";
@@ -71,10 +74,36 @@ partial class UcTablespaces
         // pnlAcciones
         //
         pnlAcciones.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+        pnlAcciones.ColumnCount = 2;
+        pnlAcciones.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        pnlAcciones.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         pnlAcciones.Location = new Point(24, 92);
         pnlAcciones.Name = "pnlAcciones";
-        pnlAcciones.Size = new Size(1052, 42);
-        pnlAcciones.WrapContents = false;
+        pnlAcciones.RowCount = 2;
+        pnlAcciones.RowStyles.Add(new RowStyle(SizeType.Absolute, 44F));
+        pnlAcciones.RowStyles.Add(new RowStyle(SizeType.Absolute, 44F));
+        pnlAcciones.Size = new Size(1052, 92);
+        //
+        // flpAcciones
+        //
+        flpAcciones.Dock = DockStyle.Fill;
+        flpAcciones.Name = "flpAcciones";
+        flpAcciones.WrapContents = false;
+        //
+        // flpAccionesEstado
+        //
+        flpAccionesEstado.Dock = DockStyle.Fill;
+        flpAccionesEstado.Name = "flpAccionesEstado";
+        flpAccionesEstado.WrapContents = false;
+        //
+        // flpAccionesPeligro
+        //
+        flpAccionesPeligro.AutoSize = true;
+        flpAccionesPeligro.Dock = DockStyle.Fill;
+        flpAccionesPeligro.FlowDirection = FlowDirection.RightToLeft;
+        flpAccionesPeligro.Name = "flpAccionesPeligro";
+        flpAccionesPeligro.Padding = new Padding(0, 24, 0, 0);
+        flpAccionesPeligro.WrapContents = false;
         //
         // btnCrear
         //
@@ -118,14 +147,19 @@ partial class UcTablespaces
         btnEliminar.Estilo = OraAdminXE.UI.EstiloBoton.Peligro;
         btnEliminar.Icono = "\uE74D";
         btnEliminar.Text = "Eliminar";
-        pnlAcciones.Controls.AddRange([btnCrear, btnAgregarArchivo, btnRedimensionar, btnAutoextend,
-            btnOffline, btnOnline, btnSoloLectura, btnLecturaEscritura, btnEliminar]);
+        flpAcciones.Controls.AddRange([btnCrear, btnAgregarArchivo, btnRedimensionar, btnAutoextend]);
+        flpAccionesEstado.Controls.AddRange([btnOffline, btnOnline, btnSoloLectura, btnLecturaEscritura]);
+        flpAccionesPeligro.Controls.Add(btnEliminar);
+        pnlAcciones.Controls.Add(flpAcciones, 0, 0);
+        pnlAcciones.Controls.Add(flpAccionesEstado, 0, 1);
+        pnlAcciones.Controls.Add(flpAccionesPeligro, 1, 0);
+        pnlAcciones.SetRowSpan(flpAccionesPeligro, 2);
         //
         // lblAvisoXe
         //
         lblAvisoXe.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-        lblAvisoXe.ForeColor = Color.FromArgb(100, 116, 139);
-        lblAvisoXe.Location = new Point(24, 142);
+        lblAvisoXe.ForeColor = OraAdminXE.UI.Tema.TextoSecundario;
+        lblAvisoXe.Location = new Point(24, 192);
         lblAvisoXe.Name = "lblAvisoXe";
         lblAvisoXe.Size = new Size(1052, 22);
         lblAvisoXe.Text = "Oracle Database XE admite hasta 12 GB de datos de usuario.";
@@ -133,16 +167,16 @@ partial class UcTablespaces
         // lblTablespaces
         //
         lblTablespaces.AutoSize = true;
-        lblTablespaces.Font = new Font("Segoe UI Semibold", 12F);
-        lblTablespaces.ForeColor = Color.FromArgb(15, 23, 42);
-        lblTablespaces.Location = new Point(24, 180);
+        lblTablespaces.Font = OraAdminXE.UI.Tema.FuenteNegrita;
+        lblTablespaces.ForeColor = OraAdminXE.UI.Tema.Texto;
+        lblTablespaces.Location = new Point(24, 230);
         lblTablespaces.Name = "lblTablespaces";
         lblTablespaces.Text = "Uso de tablespaces";
         //
         // grdTablespaces
         //
         grdTablespaces.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-        grdTablespaces.Location = new Point(24, 212);
+        grdTablespaces.Location = new Point(24, 262);
         grdTablespaces.Name = "grdTablespaces";
         grdTablespaces.Size = new Size(1052, 188);
         grdTablespaces.TabIndex = 1;
@@ -151,18 +185,18 @@ partial class UcTablespaces
         // lblArchivos
         //
         lblArchivos.AutoSize = true;
-        lblArchivos.Font = new Font("Segoe UI Semibold", 12F);
-        lblArchivos.ForeColor = Color.FromArgb(15, 23, 42);
-        lblArchivos.Location = new Point(24, 416);
+        lblArchivos.Font = OraAdminXE.UI.Tema.FuenteNegrita;
+        lblArchivos.ForeColor = OraAdminXE.UI.Tema.Texto;
+        lblArchivos.Location = new Point(24, 466);
         lblArchivos.Name = "lblArchivos";
         lblArchivos.Text = "Datafiles y tempfiles del tablespace seleccionado";
         //
         // grdArchivos
         //
         grdArchivos.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-        grdArchivos.Location = new Point(24, 448);
+        grdArchivos.Location = new Point(24, 498);
         grdArchivos.Name = "grdArchivos";
-        grdArchivos.Size = new Size(1052, 228);
+        grdArchivos.Size = new Size(1052, 178);
         grdArchivos.TabIndex = 2;
         //
         // UcTablespaces
@@ -191,7 +225,10 @@ partial class UcTablespaces
     private Label lblTitulo;
     private Label lblDescripcion;
     private OraAdminXE.UI.BotonPlano btnRefrescar;
-    private FlowLayoutPanel pnlAcciones;
+    private TableLayoutPanel pnlAcciones;
+    private FlowLayoutPanel flpAcciones;
+    private FlowLayoutPanel flpAccionesEstado;
+    private FlowLayoutPanel flpAccionesPeligro;
     private OraAdminXE.UI.BotonPlano btnCrear;
     private OraAdminXE.UI.BotonPlano btnAgregarArchivo;
     private OraAdminXE.UI.BotonPlano btnRedimensionar;
