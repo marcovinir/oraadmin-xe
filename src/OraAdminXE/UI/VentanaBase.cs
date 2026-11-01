@@ -11,6 +11,7 @@ public class VentanaBase : Form
         Font = Tema.Fuente;
         BackColor = Tema.Fondo;
         ForeColor = Tema.Texto;
+        Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
     }
 
     protected override void OnLoad(EventArgs e)

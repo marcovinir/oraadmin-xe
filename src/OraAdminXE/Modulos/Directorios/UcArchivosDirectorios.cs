@@ -8,7 +8,7 @@ namespace OraAdminXE.Modulos.Directorios;
 /// <summary>Pestaña restringida a inspeccionar y administrar DMP catalogados en DIRECTORY activos verificados.</summary>
 public sealed class UcArchivosDirectorios : UserControl
 {
-    private readonly ComboBox _cboDirectorios = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 380 };
+    private readonly ComboBox _cboDirectorios = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 300 };
     private readonly DataGridView _grilla = new() { Dock = DockStyle.Fill };
     private readonly DataGridView _huerfanos = new() { Dock = DockStyle.Fill };
     private readonly Label _lblResumen = new() { Dock = DockStyle.Top, Height = 30, ForeColor = Tema.TextoSecundario, TextAlign = ContentAlignment.MiddleLeft };
@@ -18,7 +18,7 @@ public sealed class UcArchivosDirectorios : UserControl
     private readonly BotonPlano _btnRenombrar = Tema.Boton("Renombrar DMP", icono: "✎");
     private readonly BotonPlano _btnEliminar = Tema.Boton("Eliminar DMP", icono: "✕");
     private readonly BotonPlano _btnAbrir = Tema.Boton("Abrir carpeta", icono: "▣");
-    private readonly BotonPlano _btnMarcar = Tema.Boton("Marcar como ELIMINADO", icono: "⚠");
+    private readonly BotonPlano _btnMarcar = Tema.Boton("Marcar eliminado", icono: "⚠");
     private readonly BotonPlano _btnRefrescar = Tema.Boton("Refrescar", icono: "↻");
     private readonly List<ArchivoListado> _archivos = [];
     private readonly List<RespaldoAusente> _respaldosAusentes = [];
@@ -38,19 +38,19 @@ public sealed class UcArchivosDirectorios : UserControl
         _btnEliminar.Estilo = EstiloBoton.Peligro;
         _btnMarcar.Estilo = EstiloBoton.Peligro;
 
-        var selector = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false, AutoScroll = true };
+        var selector = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false };
         selector.Controls.AddRange([new Label { Text = "DIRECTORY activo:", AutoSize = true, Margin = new Padding(0, 10, 8, 0) }, _cboDirectorios]);
         var acciones = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false };
         acciones.Controls.AddRange([_btnLog, _btnRenombrar, _btnAbrir]);
         var accionesDerecha = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, FlowDirection = FlowDirection.RightToLeft, WrapContents = false };
-        accionesDerecha.Controls.AddRange([_btnEliminar, _btnMarcar, _btnRefrescar]);
+        accionesDerecha.Controls.AddRange([_btnEliminar, _btnMarcar]);
         var barra = new TableLayoutPanel { Dock = DockStyle.Top, Height = 94, ColumnCount = 2, RowCount = 2, Padding = new Padding(0, 0, 0, 4) };
         barra.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         barra.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         barra.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
         barra.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
         barra.Controls.Add(selector, 0, 0);
-        barra.SetColumnSpan(selector, 2);
+        barra.Controls.Add(_btnRefrescar, 1, 0);
         barra.Controls.Add(acciones, 0, 1);
         barra.Controls.Add(accionesDerecha, 1, 1);
 
@@ -68,6 +68,8 @@ public sealed class UcArchivosDirectorios : UserControl
         panelHuerfanos.Controls.Add(_huerfanos);
         panelHuerfanos.Controls.Add(_lblHuerfanos);
         var division = new SplitContainer { Dock = DockStyle.Fill, Orientation = Orientation.Horizontal, SplitterDistance = 310, Panel1MinSize = 180, Panel2MinSize = 110, BackColor = Tema.Borde };
+        division.Panel1.BackColor = Tema.Superficie;
+        division.Panel2.BackColor = Tema.Superficie;
         division.Panel1.Controls.Add(panelArchivos);
         division.Panel2.Controls.Add(panelHuerfanos);
 
