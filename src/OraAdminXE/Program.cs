@@ -8,6 +8,8 @@ static class Program
     static void Main()
     {
         ApplicationConfiguration.Initialize();
+        // Un error que se escape de un evento muestra el diálogo de error en lugar de cerrar la app.
+        ManejadorErrores.Instalar();
 
         using (var login = new FrmLogin())
         {

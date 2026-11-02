@@ -23,7 +23,7 @@ public interface IBaseDatos
     /// </summary>
     Task ConectarAsync(ConfigConexion config, string clave);
 
-    /// <summary>SELECT con variables bind. No se registra en la bitácora.</summary>
+    /// <summary>SELECT con variables bind (crearlas con <see cref="Parametro.De"/>). No se registra en la bitácora.</summary>
     Task<DataTable> ConsultarAsync(string sql, params OracleParameter[] parametros);
 
     /// <summary>SELECT que devuelve un solo valor (o null).</summary>
@@ -31,7 +31,8 @@ public interface IBaseDatos
 
     /// <summary>
     /// DDL, DML o bloque PL/SQL. Registra SIEMPRE en la bitácora (OK o ERROR con el ORA completo)
-    /// y relanza la excepción si falla. Devuelve las filas afectadas.
+    /// y relanza la excepción si falla. Devuelve las filas afectadas. Las contraseñas de IDENTIFIED BY
+    /// se guardan enmascaradas en la bitácora y el «;» final se quita solo (salvo en PL/SQL).
     /// </summary>
     Task<int> EjecutarAsync(Modulo modulo, string accion, string sql, params OracleParameter[] parametros);
 

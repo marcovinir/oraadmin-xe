@@ -78,7 +78,7 @@ El enunciado pide «una aplicación para la administración y ejecución de resp
 5. **Proteger lo de Oracle.** Las listas de usuarios, roles y esquemas filtran `ORACLE_MAINTAINED = 'N'` por defecto (con una casilla «Mostrar objetos de Oracle»). Los tablespaces `SYSTEM`, `SYSAUX`, `UNDOTBS1` y `TEMP` no se pueden borrar ni poner offline desde la app.
 6. **Nada de concatenar valores del usuario.** Los valores van con variables bind (`:nombre`). Los nombres de objetos, que no admiten bind, pasan por `Identificador.Validar`.
 7. **Las operaciones largas no congelan la pantalla.** Todo acceso a la BD es `async`/`await`. Mientras corre, se deshabilitan los botones y se muestra el cursor de espera o una barra de progreso.
-8. **Usar `Tema`** para colores, fuentes y grillas (`Tema.AplicarGrilla`).
+8. **Usar el sistema visual** (sección 6): colores de `Tema`, `BotonPlano`, pastillas de estado y estados vacíos. Nada de `MessageBox` ni colores sueltos.
 
 ## 5. Contrato de código (para trabajar en paralelo)
 
@@ -118,17 +118,37 @@ public partial class UcTablespaces : ModuloBase
 | Pieza | Archivo | Estado |
 |---|---|---|
 | `IBaseDatos` (contrato) | `Datos/IBaseDatos.cs` | ✅ definido |
-| `BaseDatos` (implementación) | `Datos/BaseDatos.cs` | ⏳ #3 |
+| `BaseDatos` (implementación) | `Datos/BaseDatos.cs` | ✅ listo (#3) |
 | `Identificador` | `Datos/Identificador.cs` | ✅ listo |
-| `Dialogos` | `UI/Dialogos.cs` | ⏳ #4 |
-| `FrmLogin` | `UI/FrmLogin.cs` | ⏳ #5 |
+| `Dialogos` + `DlgSql` + `Csv` | `UI/` | ✅ listo (#4) |
+| `FrmLogin` | `UI/FrmLogin.cs` | ✅ listo (#5) |
 | `FrmPrincipal` + menú | `UI/FrmPrincipal.cs` | ✅ listo |
 | `Tema` | `UI/Tema.cs` | ✅ listo |
 | Pantallas | `Modulos/*/Uc*.cs` | ⏳ una issue por módulo |
 
 **Mientras el Núcleo no esté listo** (martes 27, issues #3 y #4), cada persona puede diseñar sus pantallas en el diseñador de Visual Studio y probar sus consultas en SQL Developer: el contrato ya está definido.
 
-## 6. Trampas conocidas (leer antes de empezar)
+## 6. Sistema visual (tema oscuro «Medianoche violeta», issue #38)
+
+La app es **oscura**: fondo `#0E1016`, menú `#0A0B10`, superficies `#14161F` y acento violeta `#7C6CF2`. **No hay que pintar nada a mano**: `Tema.Aplicar` recorre cada pantalla y le pone el tema. Lo que se diseñe en Visual Studio con los colores por defecto se ve oscuro al correr la app (en el diseñador se sigue viendo claro, y eso es normal).
+
+| Necesito… | Uso | Ejemplo |
+|---|---|---|
+| Un botón | `BotonPlano` (en el diseñador está en el cuadro de herramientas) o `Tema.Boton(...)` | `Tema.Boton("Crear tablespace", primario: true, icono: "")` |
+| Botón destructivo | `Estilo = EstiloBoton.Peligro` | Eliminar, Revocar, Matar sesión |
+| Un diálogo o formulario nuevo | heredar de **`VentanaBase`** (no de `Form`) | `public partial class DlgTablespace : VentanaBase` |
+| Pestañas | `Pestanas` (el `TabControl` de Windows no admite oscuro) | `pestanas.Agregar("Datafiles", new UcDatafiles());` |
+| Estado en una grilla (OPEN, ERROR, ONLINE…) | `Tema.ColumnaEstado(grilla, "COLUMNA")` | Lo pinta como pastilla verde, amarilla, roja o gris según el texto |
+| Grilla vacía | `Tema.MensajeVacio(grilla, "No hay respaldos todavía", "")` | Ícono y mensaje centrados |
+| «Cargando…» | `Tema.Cargando(grilla, true)` / `false` | Mientras corre la consulta |
+| Aviso de éxito | `Dialogos.Exito(this, "Respaldo creado")` | **Toast** abajo a la derecha que se va solo |
+| Tarjeta de indicador | `Modulos/Dashboard/Tarjeta` | Ver Inicio |
+
+**Íconos:** glifos de la fuente *Segoe MDL2 Assets* (`` agregar, `` borrar, `` refrescar, `` guardar, `` candado, `` carpeta, `` gráfico). La lista completa está en la documentación de Microsoft: *Segoe MDL2 Assets icons*.
+
+**Límites conocidos de WinForms en oscuro:** las casillas dentro de un `CheckedListBox`, las flechas de `NumericUpDown` y el calendario del `DateTimePicker` siguen siendo claros, porque son controles nativos.
+
+## 7. Trampas conocidas (leer antes de empezar)
 
 - **Conectarse a `XEPDB1`, no a `XE`.**
 - **Oracle no crea la carpeta del `DIRECTORY`.** Hay que crearla en el disco antes. Si sale `ORA-39070` u `ORA-29283`, es un problema de ruta o de permisos del servicio `OracleServiceXE` sobre la carpeta.
@@ -138,12 +158,14 @@ public partial class UcTablespaces : ModuloBase
 - **Nombres de job únicos.** Usar `EXP_<TIPO>_<yyyyMMdd_HHmmss>`. Si un job falla, puede quedar su tabla maestra. `DBA_DATAPUMP_JOBS` con estado `NOT RUNNING` se limpia con `DROP TABLE ADMIN_BD.<job> PURGE`.
 - **`PASSWORD_VERIFY_FUNCTION ora12c_verify_function`** falla si antes no se corrió `utlpwdmg.sql` en la PDB. Para la demo no se usa.
 - **`ALTER SYSTEM KILL SESSION`** necesita `'sid,serial#'`. No se debe matar la propia sesión de la app (`SYS_CONTEXT('USERENV','SID')`).
+- **Eventos `async` (botones, `SelectionChanged`…): todo el cuerpo va dentro de `try`/`catch` con `Dialogos.Error`.** Si una excepción se escapa, `ManejadorErrores` (instalado en `Program.cs`) la muestra en vez de cerrar la app, pero es solo una red de seguridad. Además, **no se carga una grilla desde el `SelectionChanged` de otra mientras esta se está llenando**: se usa una bandera `_cargando` y `BeginInvoke(...)` (caso real de Perfiles, PR #46).
+- **`new OracleParameter("x", 0)` no pasa el valor 0:** C# convierte el literal `0` a `OracleDbType` y llama al constructor equivocado (`ArgumentOutOfRangeException`). Usar siempre **`Parametro.De("x", valor)`**.
 - **Dentro de la PDB, `V$SYSMETRIC` viene vacía.** Para las métricas de Performance se usa `V$CON_SYSMETRIC` (`group_id = 18`).
 - **Para la demo de tuning no se usa `COUNT(*)`**, porque Oracle lo resuelve con el índice de la PK. Hay que consultar columnas de la tabla (`SELECT *` o `SUM(cantidad)`).
 - **Límites de XE:** 2 hilos de CPU, 2 GB de RAM y 12 GB de datos de usuario. El respaldo **full** de la PDB tarda un par de minutos y genera cientos de MB.
 - **Las contraseñas no van al repo.** `conexion.json` está en el `.gitignore` y no guarda la contraseña.
 - **Probar en una máquina del laboratorio antes del domingo.** Si no tiene Visual Studio, se lleva el `.exe` publicado con `dotnet publish -c Release -r win-x64 --self-contained`.
 
-## 7. Extras (solo si lo obligatorio ya funciona)
+## 8. Extras (solo si lo obligatorio ya funciona)
 
 Respaldos programados con `DBMS_SCHEDULER` (tablas `PROGRAMACION*`), política de retención («borrar respaldos con más de N días»), exportar cualquier grilla a CSV, semáforos en Inicio y comparador de planes lado a lado. Cada uno tiene su issue con la etiqueta `extra`.

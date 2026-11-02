@@ -10,7 +10,10 @@
     <AssemblyName>OraAdminXE</AssemblyName>
     <Product>OraAdmin XE</Product>
     <Description>Consola DBA para Oracle 21c XE — Proyecto Final EIF-402, UNA</Description>
-    <Version>0.1.0</Version>
+    <Version>1.0.0</Version>
+    <ApplicationIcon>Recursos\oraadmin.ico</ApplicationIcon>
+    <!-- Mete las DLL nativas (SkiaSharp) dentro del .exe al publicar en un solo archivo. -->
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <!-- SkiaSharp (dependencia de ScottPlot) avisa de compatibilidad con .NET Framework; funciona en .NET 8. -->
     <NoWarn>$(NoWarn);NU1701</NoWarn>
   </PropertyGroup>

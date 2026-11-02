@@ -19,13 +19,13 @@ partial class UcSeguridad
     {
         lblTitulo = new Label();
         lblDescripcion = new Label();
+        pestanas = new OraAdminXE.UI.Pestanas();
         SuspendLayout();
         //
         // lblTitulo
         //
         lblTitulo.AutoSize = true;
         lblTitulo.Font = new Font("Segoe UI Semibold", 16F);
-        lblTitulo.ForeColor = Color.FromArgb(15, 23, 42);
         lblTitulo.Location = new Point(24, 20);
         lblTitulo.Name = "lblTitulo";
         lblTitulo.Text = "Seguridad de usuarios";
@@ -36,7 +36,15 @@ partial class UcSeguridad
         lblDescripcion.ForeColor = Color.FromArgb(100, 116, 139);
         lblDescripcion.Location = new Point(26, 58);
         lblDescripcion.Name = "lblDescripcion";
-        lblDescripcion.Text = "Usuarios, roles, privilegios y perfiles (en construcción)";
+        lblDescripcion.Text = "Usuarios, roles, privilegios y perfiles";
+        //
+        // pestanas (las pestañas se agregan en el constructor de UcSeguridad)
+        //
+        pestanas.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+        pestanas.Location = new Point(24, 88);
+        pestanas.Name = "pestanas";
+        pestanas.Size = new Size(1052, 588);
+        pestanas.TabIndex = 0;
         //
         // UcSeguridad
         //
@@ -44,6 +52,7 @@ partial class UcSeguridad
         AutoScaleMode = AutoScaleMode.Font;
         Controls.Add(lblTitulo);
         Controls.Add(lblDescripcion);
+        Controls.Add(pestanas);
         Name = "UcSeguridad";
         Size = new Size(1100, 700);
         ResumeLayout(false);
@@ -54,4 +63,5 @@ partial class UcSeguridad
 
     private Label lblTitulo;
     private Label lblDescripcion;
+    private OraAdminXE.UI.Pestanas pestanas;
 }

@@ -19,13 +19,14 @@ partial class UcAuditoria
     {
         lblTitulo = new Label();
         lblDescripcion = new Label();
+        pestanas = new OraAdminXE.UI.Pestanas();
         SuspendLayout();
         //
         // lblTitulo
         //
         lblTitulo.AutoSize = true;
-        lblTitulo.Font = new Font("Segoe UI Semibold", 16F);
-        lblTitulo.ForeColor = Color.FromArgb(15, 23, 42);
+        lblTitulo.Font = OraAdminXE.UI.Tema.FuenteTitulo;
+        lblTitulo.ForeColor = OraAdminXE.UI.Tema.Texto;
         lblTitulo.Location = new Point(24, 20);
         lblTitulo.Name = "lblTitulo";
         lblTitulo.Text = "Auditoría";
@@ -33,10 +34,18 @@ partial class UcAuditoria
         // lblDescripcion
         //
         lblDescripcion.AutoSize = true;
-        lblDescripcion.ForeColor = Color.FromArgb(100, 116, 139);
+        lblDescripcion.ForeColor = OraAdminXE.UI.Tema.TextoSecundario;
         lblDescripcion.Location = new Point(26, 58);
         lblDescripcion.Name = "lblDescripcion";
-        lblDescripcion.Text = "Políticas de auditoría unificada y pista de auditoría (en construcción)";
+        lblDescripcion.Text = "Administración de políticas y consulta de eventos de auditoría unificada de Oracle.";
+        //
+        // pestanas
+        //
+        pestanas.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+        pestanas.Location = new Point(24, 88);
+        pestanas.Name = "pestanas";
+        pestanas.Size = new Size(1052, 588);
+        pestanas.TabIndex = 0;
         //
         // UcAuditoria
         //
@@ -44,6 +53,7 @@ partial class UcAuditoria
         AutoScaleMode = AutoScaleMode.Font;
         Controls.Add(lblTitulo);
         Controls.Add(lblDescripcion);
+        Controls.Add(pestanas);
         Name = "UcAuditoria";
         Size = new Size(1100, 700);
         ResumeLayout(false);
@@ -54,4 +64,5 @@ partial class UcAuditoria
 
     private Label lblTitulo;
     private Label lblDescripcion;
+    private OraAdminXE.UI.Pestanas pestanas;
 }
