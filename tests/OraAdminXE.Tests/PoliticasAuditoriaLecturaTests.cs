@@ -27,6 +27,14 @@ public class PoliticasAuditoriaLecturaTests : IAsyncLifetime
     }
 
     [OracleFact]
+    public async Task Detalle_de_una_politica_lista_sus_acciones()
+    {
+        var tabla = await _bd.ConsultarAsync(SqlAuditoria.Detalle("ORA_LOGON_FAILURES"));
+        Assert.NotEmpty(tabla.Rows);
+        Assert.All(tabla.AsEnumerable(), fila => Assert.False(string.IsNullOrWhiteSpace(fila["AUDIT_OPTION"] as string)));
+    }
+
+    [OracleFact]
     public async Task Diagnostico_y_logon_predefinido_son_solo_lectura()
     {
         var diagnostico = await _bd.ConsultarAsync(SqlAuditoria.Diagnostico);
