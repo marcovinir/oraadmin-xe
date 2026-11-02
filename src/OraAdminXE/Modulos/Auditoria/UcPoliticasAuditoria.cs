@@ -255,7 +255,7 @@ public sealed class UcPoliticasAuditoria : UserControl
         Tema.Cargando(_grdDetalle, true);
         try
         {
-            var tabla = await Bd.ConsultarAsync(SqlAuditoria.Detalle, Parametro.De("politica", politica));
+            var tabla = await Bd.ConsultarAsync(SqlAuditoria.Detalle(politica));
             if (!PuedeActualizarUi || solicitud != _solicitudDetalle) return;
             _grdDetalle.DataSource = tabla;
             ConfigurarColumnasDetalle();

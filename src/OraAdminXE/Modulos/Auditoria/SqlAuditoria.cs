@@ -1,3 +1,5 @@
+using OraAdminXE.Datos;
+
 namespace OraAdminXE.Modulos.Auditoria;
 
 /// <summary>Consultas de solo lectura para políticas de auditoría unificada en la PDB actual.</summary>
@@ -37,11 +39,12 @@ public static class SqlAuditoria
         ORDER BY d.oracle_supplied DESC, d.policy_name
         """;
 
-    public const string Detalle = """
+    // Con variable de enlace, esta sentencia da ORA-01006 en XE 21.3; por eso lleva el nombre como literal.
+    public static string Detalle(string politica) => $"""
         SELECT audit_option, audit_option_type, object_schema, object_name, object_type,
                audit_only_toplevel, audit_condition, condition_eval_opt
         FROM audit_unified_policies
-        WHERE policy_name = :politica
+        WHERE policy_name = {Identificador.Literal(politica)}
         ORDER BY audit_option_type, audit_option, object_schema, object_name
         """;
 
